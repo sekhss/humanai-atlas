@@ -349,21 +349,36 @@ function buildGraph(cap,sub){
   const g={mode:sub?'sub':cap?'cap':S.theme!==null?'theme':'all',hubs:[],subs:[],dots:[],outer:[],arcs:[],links:[],capId:cap?cap.id:null,subName:sub?sub.name:'',k:1};
   const hubById={},outerById={},subNode={};
   if(g.mode==='all'||g.mode==='theme'){
-    const nodes=g.mode==='all'?rootNodes():CAPS.filter(c=>c.theme===S.theme).map(c=>({key:c.id,name:c.name,capIds:[c.id],ne:c.ne,go:'cap:'+c.id,theme:c.theme}));
-    const nR=nodes.filter(n=>!n.ne).length,R=nR<=4?150:nR<=7?188:214,big=nR<=10;
-    const data=nodes.map(n=>({n,items:[].concat(...n.capIds.map(id=>visible(BYCAP[id]||[])))}));
-    g.k=Math.max(1,Math.ceil(Math.max(...data.map(d=>d.items.length),1)/100));
-    let ri=0;const nodeOf={};
-    data.forEach(({n,items})=>{
-      let p,ha=0;
-      if(n.ne){p=[598,584]}else{ha=-Math.PI/2+(ri++)*TAU/Math.max(nR,1);p=polar(CX,CY,R,ha)}
-      const hub={id:n.key,x:p[0],y:p[1],name:n.name,fixed:!!n.ne,n:items.length,go:n.go,theme:n.theme,ha,isTheme:g.mode==='all',capIds:n.capIds,ne:!!n.ne};
+    const specs=[];   // one per bubble: {n: node, p: position, ha: angle, kind: 'main' | 'adj'}
+    if(g.mode==='all'){
+      const nodes=rootNodes(),nR=nodes.filter(x=>!x.ne).length,R=nR<=7?188:214;let ri=0;
+      nodes.forEach(n=>{if(n.ne)specs.push({n,p:[598,584],ha:0,kind:'main'});else{const ha=-Math.PI/2+(ri++)*TAU/Math.max(nR,1);specs.push({n,p:polar(CX,CY,R,ha),ha,kind:'main'})}});
+    }else{
+      const mk=c=>({key:c.id,name:c.name,capIds:[c.id],ne:c.ne,go:'cap:'+c.id,theme:c.theme});
+      const selc=CAPS.filter(c=>c.theme===S.theme).map(mk),nS=selc.length,Rs=nS<=1?0:nS<=2?92:nS<=3?108:126;
+      selc.forEach((n,i)=>{const ha=-Math.PI/2+i*TAU/Math.max(nS,1);specs.push({n,p:polar(CX,CY,Rs,ha),ha,kind:'main'})});
+      // groups of the neighbouring themes (previous on the left, next on the right) sit faded around the edge
+      const rn=rootNodes().filter(x=>!x.ne),ix=rn.findIndex(x=>x.theme===S.theme),side=[[],[]];
+      const gather=d=>{side[0]=[];side[1]=[];const seen=new Set([S.theme]);
+        for(let j=1;j<=d;j++)[[ix-j,0],[ix+j,1]].forEach(([k,sd])=>{const nd=rn[((k%rn.length)+rn.length)%rn.length];if(nd&&!seen.has(nd.theme)){seen.add(nd.theme);side[sd].push(...CAPS.filter(c=>c.theme===nd.theme&&!c.ne).map(mk))}})};
+      if(ix>=0){gather(1);if(side[0].length+side[1].length<5)gather(2)}
+      [0,1].forEach(sd=>{const m=side[sd].length,c0=sd===0?Math.PI:0,span=Math.min(Math.PI*0.9,0.5*m);
+        side[sd].forEach((n,i)=>{const ha=m===1?c0:c0-span/2+span*(i+0.5)/m;specs.push({n,p:polar(CX,CY,250,ha),ha,kind:'adj'})})});
+    }
+    specs.forEach(x=>{x.items=[].concat(...x.n.capIds.map(id=>visible(BYCAP[id]||[])))});
+    const mx=kind=>Math.max(...specs.filter(x=>x.kind===kind).map(x=>x.items.length),1);
+    const kMain=Math.max(1,Math.ceil(mx('main')/100)),kAdj=Math.max(1,Math.ceil(mx('adj')/40));
+    g.k=kMain;
+    const big=g.mode==='theme'||specs.length<=11,nodeOf={};
+    specs.forEach(({n,p,ha,kind,items})=>{
+      const adj=kind==='adj';
+      const hub={id:n.key,x:p[0],y:p[1],name:n.name,fixed:!!n.ne,n:items.length,go:n.go,theme:n.theme,ha,isTheme:g.mode==='all',capIds:n.capIds,ne:!!n.ne,adj,fade:adj?0.55:0};
       g.hubs.push(hub);hubById[n.key]=hub;n.capIds.forEach(id=>{nodeOf[id]=n.key});
-      const sp=big?4.1:3.4,rr=big?3.2:2.6;
-      let rad=14;bundle(items,g.k).forEach((b,i)=>{const u=sf(i),f=sp*(1+15/(8*Math.sqrt(i+1))),dx=u[0]*f,dy=u[1]*f;rad=Math.max(rad,Math.hypot(dx,dy)+rr+2);g.dots.push({b,cap:n.key,x:p[0]+dx,y:p[1]+dy,r:rr,home:hub,fixed:!!n.ne})});hub.rad=rad;
+      const sp=adj?2.9:big?4.1:3.4,rr=adj?2.2:big?3.2:2.6;
+      let rad=14;bundle(items,adj?kAdj:kMain).forEach((b,i)=>{const u=sf(i),f=sp*(1+15/(8*Math.sqrt(i+1))),dx=u[0]*f,dy=u[1]*f;rad=Math.max(rad,Math.hypot(dx,dy)+rr+2);g.dots.push({b,cap:n.key,x:p[0]+dx,y:p[1]+dy,r:rr,home:hub,fixed:!!n.ne})});hub.rad=rad;
     });
     const m={};
-    data.forEach(({items})=>items.forEach(s=>{if(!s.also)return;const a=nodeOf[s.cap],b=nodeOf[s.also];if(a&&b&&a!==b&&!hubById[a].ne&&!hubById[b].ne){const k=a+'>'+b;m[k]=(m[k]||0)+1}}));
+    specs.forEach(({items})=>items.forEach(s=>{if(!s.also)return;const a=nodeOf[s.cap],b=nodeOf[s.also];if(a&&b&&a!==b&&!hubById[a].ne&&!hubById[b].ne&&!(hubById[a].adj&&hubById[b].adj)){const k=a+'>'+b;m[k]=(m[k]||0)+1}}));
     const per={};Object.keys(m).forEach(k=>{const[a,b]=k.split('>');(per[a]=per[a]||[]).push([b,m[k]])});
     Object.keys(per).forEach(a=>{const hubN=hubById[a].n;per[a].sort((x,y)=>y[1]-x[1]).slice(0,3).forEach(([b,n])=>{if(n>=Math.max(6,0.03*hubN))g.links.push({from:hubById[a],to:hubById[b],n,cap:a})})});
   }else if(g.mode==='cap'){
@@ -429,7 +444,7 @@ function draw(t){
   }
   g.dots.forEach(d=>{
     const b=d.b,col=dotCol(b,d.cap,g.mode),unk=(S.colour==='dir'||g.mode==='sub')&&b.dir==='unk',r=dotR(d);
-    ctx.globalAlpha=age*(d.home&&d.home.dim?0.12:1);ctx.beginPath();ctx.arc(d.rx,d.ry,r,0,TAU);
+    ctx.globalAlpha=age*(d.home&&d.home.dim?0.12:(d.home&&d.home.fade)||1);ctx.beginPath();ctx.arc(d.rx,d.ry,r,0,TAU);
     if(unk){ctx.strokeStyle=COL['d-unk'];ctx.lineWidth=1.5;ctx.stroke()}else{ctx.fillStyle=COL[col];ctx.fill()}
   });
   ctx.globalAlpha=age;
@@ -438,15 +453,15 @@ function draw(t){
     else{ctx.globalAlpha=age;ctx.fillStyle=COL['c-'+s.cap];ctx.strokeStyle=COL.bg;ctx.lineWidth=2;ctx.beginPath();ctx.arc(s.rx,s.ry,7,0,TAU);ctx.fill();ctx.stroke();
       ctx.globalAlpha=age*0.22;ctx.strokeStyle=COL['c-'+s.cap];ctx.lineWidth=1.2;ctx.beginPath();ctx.arc(s.rx,s.ry,s.cr,0,TAU);ctx.stroke()}
   });
-  g.hubs.forEach(h=>{ctx.globalAlpha=age*(h.dim?0.15:1);ctx.fillStyle=COL['c-'+h.id];ctx.strokeStyle=COL.bg;ctx.lineWidth=3;ctx.beginPath();ctx.arc(h.rx,h.ry,g.mode==='cap'?20:11,0,TAU);ctx.fill();ctx.stroke()});
+  g.hubs.forEach(h=>{ctx.globalAlpha=age*(h.dim?0.15:h.fade||1);ctx.fillStyle=COL['c-'+h.id];ctx.strokeStyle=COL.bg;ctx.lineWidth=3;ctx.beginPath();ctx.arc(h.rx,h.ry,g.mode==='cap'?20:11,0,TAU);ctx.fill();ctx.stroke()});
   g.outer.forEach(o=>{ctx.globalAlpha=age;ctx.fillStyle=COL['c-'+o.id];ctx.strokeStyle=COL.bg;ctx.lineWidth=3;ctx.beginPath();ctx.arc(o.rx,o.ry,o.r,0,TAU);ctx.fill();ctx.stroke();
     if(o.own){ctx.strokeStyle=COL['c-'+o.id];ctx.lineWidth=2;ctx.beginPath();ctx.arc(o.rx,o.ry,o.r+5,0,TAU);ctx.stroke()}});
   ctx.globalAlpha=age;
   if(g.mode==='all'||g.mode==='theme'){
-    g.hubs.forEach(h=>{ctx.font='700 12.5px '+FONT;const ls=wrap(h.name,104).slice(0,3),n=ls.length+1;ctx.globalAlpha=age*(h.dim?0.22:1);
-      let dx=0,dy=1;if(!h.fixed){const vx=h.rx-CX,vy=h.ry-CY,L=Math.hypot(vx,vy)||1;dx=vx/L*(h.inner?-1:1);dy=vy/L*(h.inner?-1:1)}
-      const d=(h.rad||30)+8+(n*14/2)*Math.abs(dy)+44*Math.abs(dx),cx=Math.max(56,Math.min(W-56,h.rx+dx*d)),cy=h.ry+dy*d;
-      ls.forEach((l,i)=>halo(l,cx,cy+(i-(n-1)/2)*14,'700 12.5px '+FONT,COL.ink));halo(String(h.n),cx,cy+(ls.length-(n-1)/2)*14,'400 11px '+FONT,COL.muted)});ctx.globalAlpha=age;
+    g.hubs.forEach(h=>{const sm=!!h.adj,fnt=(sm?'600 11px ':'700 12.5px ')+FONT,fc=sm?COL.muted:COL.ink;ctx.font=fnt;const ls=wrap(h.name,sm?96:104).slice(0,3),n=ls.length+1;ctx.globalAlpha=age*(h.dim?0.22:sm?0.9:1);
+      let dx=0,dy=1;if(!h.fixed){const vx=h.rx-CX,vy=h.ry-CY,L=Math.hypot(vx,vy);if(L>8){dx=vx/L*(h.inner?-1:1);dy=vy/L*(h.inner?-1:1)}}
+      const d=(h.rad||30)+14+(n*14/2)*Math.abs(dy)+44*Math.abs(dx),cx=Math.max(56,Math.min(W-56,h.rx+dx*d)),cy=h.ry+dy*d;
+      ls.forEach((l,i)=>halo(l,cx,cy+(i-(n-1)/2)*14,fnt,fc));halo(String(h.n),cx,cy+(ls.length-(n-1)/2)*14,'400 11px '+FONT,COL.muted)});ctx.globalAlpha=age;
   }else if(g.mode==='cap'){
     g.hubs.forEach(h=>{ctx.font='700 17px '+FONT;const ls=wrap(h.name,120);ls.forEach((l,i)=>halo(l,h.rx,h.ry+36+i*18,'700 17px '+FONT,COL.ink))});
     g.subs.forEach(s=>{ctx.font='600 12px '+FONT;const lines=wrap(s.name,104).slice(0,3),h=14,y0=s.rly-(lines.length*h)/2;
@@ -486,7 +501,7 @@ function showTip(e,h){
   else if(h.hub){const hb=h.hub,one=hb.capIds.length===1,c=one?byCapId(hb.capIds[0]):null;G.prev=G.prev||{};
     const list=G.prev[hb.id]||(G.prev[hb.id]=(one?c.subs.map(x=>[x.name,visible(BYSUB[c.id+'/'+x.id]||[]).length]):hb.capIds.map(id=>[byCapId(id).name,visible(BYCAP[id]||[]).length])).sort((a,b)=>b[1]-a[1]).slice(0,3).filter(x=>x[1]));
     const desc=one?c.desc:(THEMES[hb.theme]||{}).description||'';
-    html=`<b>${esc(hb.name)}</b>${hb.n.toLocaleString('en-GB')} ${VIEW==='v1'?'works':'studies'} match the filters${desc?'<br>'+esc(desc):''}${list.length?'<br><span style="color:var(--muted)">Largest: '+list.map(x=>esc(x[0])+' ('+x[1].toLocaleString('en-GB')+')').join('; ')+'</span>':''}`}
+    html=`<b>${esc(hb.name)}</b>${hb.n.toLocaleString('en-GB')} ${VIEW==='v1'?'works':'studies'} match the filters${desc?'<br>'+esc(desc):''}${list.length?'<br><span style="color:var(--muted)">Largest: '+list.map(x=>esc(x[0])+' ('+x[1].toLocaleString('en-GB')+')').join('; ')+'</span>':''}${hb.adj?'<br><span style="color:var(--muted)">In the theme “'+esc((THEMES[hb.theme]||{}).name||'')+'” · tap to open</span>':''}`}
   else if(h.out)html=`<b>${esc(h.out.name)}</b>Go to this area`;
   else if(h.node)html=`<b>${esc(h.node.name)}</b>${h.node.n} studies match the filters`;
   else{tip.style.display='none';return}
@@ -604,7 +619,7 @@ function render(){
   G=buildGraph(cap,sub);G.t0=(key===viewKey&&window.__t0)?window.__t0:performance.now();
   if(key!==viewKey){window.__t0=G.t0;viewKey=key}
   const kt=G.k>1?` Each dot is a bundle of up to ${G.k} studies with the same effect.`:' Each dot is one study.';
-  $('#gcap').textContent=(!cap?(VIEW==='v2'?'Lines join groups whose studies also bear on each other; thicker means more studies.':'Themes and groups are made automatically from topic and technology.')
+  $('#gcap').textContent=(!cap?(S.theme!==null?'Faded groups belong to neighbouring themes; tap one to open it. Lines join groups whose studies also bear on each other.':VIEW==='v2'?'Lines join groups whose studies also bear on each other; thicker means more studies.':'Themes and groups are made automatically from topic and technology.')
     :!sub?(VIEW==='v2'?'Outer dots are the other groups. Lines show studies that also bear on them.':'Outer dots are the other groups.')
     :'Dots are grouped by effect. Tap a dot to jump to its card.')+kt;
   const dl=$('#dlg');dl.hidden=!(S.colour==='dir'||sub);
