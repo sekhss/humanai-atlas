@@ -205,7 +205,7 @@ const dirIdx=Object.fromEntries(DC.dir.map((d,i)=>[d,i]));
 const ALL=A.studies.map(a=>({num:a[0],id:'AHA-'+String(a[0]).padStart(5,'0'),t:a[1],y:a[2],d:a[3],v:DC.venue[a[4]],a:a[5],dir:DC.dir[a[6]],de:DC.design[a[7]],ai:DC.ai[a[8]],cf:a[9],
   hf:a[10],fi:a[11],lang:DC.lang[a[12]],st:DC.status[a[13]],pop:DC.pop[a[14]],set:DC.set[a[15]],al:a[16],c2:a[17],s2:a[18],a2:a[19],c1:a[20],s1:a[21],flag:a[22],
   q:(a[1]+' '+a[10]+' '+a[11]).toLowerCase()}));
-const Y0=Math.min(...ALL.map(s=>s.y)),Y1=Math.max(...ALL.map(s=>s.y));
+const YS=ALL.map(s=>s.y).filter(y=>y>=1900&&y<=2100),Y0=Math.min(...YS),Y1=Math.max(...YS);
 
 /* ---------- state ---------- */
 let VIEW='v2',CAPS=[],STUDIES=[],BYCAP={},BYSUB={};
@@ -228,7 +228,7 @@ function isDef(k){const d=defOf(k);return F[k].size===d.length&&d.every(v=>F[k].
 function activeCount(){let n=0;Object.keys(OPTS).forEach(k=>{if(!isDef(k))n++});if(F.from!==Y0||F.to!==Y1)n++;if(S.q)n++;return n}
 const confOf=s=>s.cf>=70?'high':s.cf>=50?'med':'low';
 function passes(s,ignore){
-  if(s.y<F.from||s.y>F.to)return false;
+  if(s.y&&(s.y<F.from||s.y>F.to))return false;
   if(!F.dir.has(s.dir)||!F.ai.has(s.ai)||!F.status.has(s.st)||!F.lang.has(s.lang==='en'?'en':'other')||!F.conf.has(confOf(s)))return false;
   if(ignore!=='design'&&!F.design.has(s.de))return false;
   if(S.q&&s.q.indexOf(S.q)<0)return false;
@@ -443,7 +443,7 @@ function statsBlock(arr,scopeLen,color,scope){
   const c=tally(arr),n=arr.length;
   const chips=DIRS.map(d=>`<div class="stat" title="${esc(d.sub)}"><b>${c[d.id].toLocaleString('en-GB')}</b><span><i class="${d.id==='unk'?'unk':''}" style="background:var(--d-${d.id})"></i>${d.label}</span></div>`).join('');
   const bar=n?DIRS.map(d=>c[d.id]?`<i class="${d.id==='unk'?'unk':''}" title="${d.label}: ${c[d.id]}" style="flex:${c[d.id]};background:var(--d-${d.id})"></i>`:'').join(''):'';
-  const keyOf=y=>y<1990?Math.floor(y/10)*10:y;const b={};arr.forEach(s=>{const k=keyOf(s.y);b[k]=(b[k]||0)+1});
+  const keyOf=y=>!y?Y0:y<1990?Math.floor(y/10)*10:y;const b={};arr.forEach(s=>{const k=keyOf(s.y);b[k]=(b[k]||0)+1});
   const lo=keyOf(Y0),keys=[];for(let k=lo;k<=Y1;k=k<1990?k+10:k+1)keys.push(k);
   const hm=Math.max(1,...keys.map(k=>b[k]||0));
   const bars=keys.map(k=>{const v=b[k]||0,lbl=k<1990?k+'s':k;return `<i class="${v?'':'z'}" style="height:${v?Math.max(6,v/hm*100):4}%" title="${lbl}: ${v}"></i>`}).join('');
@@ -467,7 +467,7 @@ function card(s){
   return `<li class="card" id="card-${s.id}">
     <h3>${link?`<a href="${esc(link)}" target="_blank" rel="noopener">${esc(s.t)}</a>`:esc(s.t)}</h3>
     ${s.fi&&s.fi!=='No finding stated.'?`<p class="fi">${esc(s.fi)}</p>`:''}
-    <div class="meta">${s.y} · ${DES[s.de]||s.de}${s.a?` · ${esc(s.a)}`:''}${s.v?`<br>${esc(s.v)}`:''}</div>
+    <div class="meta">${s.y||'Year unknown'} · ${DES[s.de]||s.de}${s.a?` · ${esc(s.a)}`:''}${s.v?`<br>${esc(s.v)}`:''}</div>
     <div class="tags">${tags.map(t=>`<span class="tag">${esc(t)}</span>`).join('')}${s.flag?'<span class="tag chk">needs checking</span>':''}</div>
     ${s.al?`<div class="meta">Also touches ${esc(s.al)}</div>`:''}
     <span class="ai">AI-coded · not yet verified · confidence ${s.cf}%</span>
