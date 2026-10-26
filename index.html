@@ -171,6 +171,12 @@ i.unk{background:none!important;border:1.6px solid var(--d-unk)}
 .rv button.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
 .path{align-self:flex-start;background:none;border:0;padding:0;font:500 11.5px var(--mono);color:var(--muted);text-decoration:underline;text-underline-offset:3px;cursor:pointer;text-align:left}
 .dl{align-self:flex-start;background:none;border:0;padding:0;font:600 12.5px var(--body);color:var(--muted);text-decoration:underline;cursor:pointer}
+.sumry{background:var(--soft);border-radius:12px;padding:12px 15px;font-size:14.5px;line-height:1.6}
+.sumry b{display:block;margin-bottom:3px;font:600 11px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.sumry p{margin:0}
+.sumry small{display:block;margin-top:6px;font:400 11.5px var(--mono);color:var(--muted)}
+a.tbtn{text-decoration:none;display:inline-block}
+.foot a{color:inherit}
 .foot{font:400 11.5px/1.5 var(--mono);color:var(--muted);border-top:1px solid var(--line);padding-top:12px}
 @media (prefers-reduced-motion:reduce){.card.flash{animation:none}.chip span{transition:none}}
 </style>
@@ -184,6 +190,7 @@ i.unk{background:none!important;border:1.6px solid var(--d-unk)}
         <button id="v2b" aria-pressed="true" title="Groups that emerge from what each study says about people">Human focus</button>
         <button id="v1b" aria-pressed="false" title="Groups that emerge from topic and technology">Topic &amp; technology</button>
       </div>
+      <a class="tbtn" href="methods.html" title="How the atlas was made and what its limits are">Method</a>
       <button class="tbtn" id="copy" title="Copy a link to exactly what you are looking at">Copy link</button>
       <button class="tbtn" id="theme" aria-label="Switch colour theme">Auto</button>
       <span class="badge" id="badge"></span>
@@ -212,10 +219,12 @@ i.unk{background:none!important;border:1.6px solid var(--d-unk)}
       <nav class="crumbs" id="crumbs" aria-label="Where you are"></nav>
       <div id="head"></div>
       <div id="stats"></div>
+      <div id="sum"></div>
       <div id="cards"></div>
     </div>
   </div>
   <p class="foot" id="foot"></p>
+  <p class="foot" style="border:0;padding-top:0;margin-top:-6px"><a href="methods.html">How this atlas was made and what its limits are →</a></p>
 </div>
 <div class="tip" id="tip"></div>
 <script src="atlas_data.js"></script>
@@ -414,7 +423,7 @@ function buildGraph(cap,sub){
     }
     g.Rm=Rm;
     const ring=CAPS.filter(c=>c.id===cap.id||cap.ne||!c.ne);
-    ring.forEach((c,k)=>{const p=polar(CX,CY,308,-Math.PI/2+k*TAU/ring.length);const o={id:c.id,x:p[0],y:p[1],name:c.name,r:c.id===cap.id?11:7.5,own:c.id===cap.id};g.outer.push(o);outerById[c.id]=o});
+    ring.forEach((c,k)=>{const p=polar(CX,CY,308,-Math.PI/2+k*TAU/ring.length);const o={id:c.id,x:p[0],y:p[1],name:c.name,r:c.id===cap.id?11:7.5,own:c.id===cap.id,sib:c.theme===cap.theme};g.outer.push(o);outerById[c.id]=o});
     const agg=aggLinks(all,s=>'c');
     Object.keys(agg).forEach(k=>{const b=k.split('>')[1];if(outerById[b]&&agg[k]>=2)g.links.push({from:{x:CX,y:CY,center:true},to:outerById[b],n:agg[k],cap:cap.id})});
   }
@@ -471,7 +480,7 @@ function draw(t){
     lines.forEach((l,i)=>halo(l,CX,y0+i*h+h/2,'700 16px '+FONT,COL.ink));
     const tot=g.arcs.reduce((a,x)=>a+x.count,0);halo(tot+(tot===1?' study':' studies'),CX,y0+lines.length*h+h/2+4,'400 12px '+FONT,COL.muted);
     g.arcs.forEach(a=>{const mid=(a.a0+a.a1)/2+theta,p=polar(CX,CY,g.Rm+48,mid);halo(a.d.label+' '+a.count,p[0],p[1],'600 12px '+FONT,COL.ink)});
-    g.outer.forEach(o=>halo(o.name,o.rx,o.ry+(o.own?24:20),'500 11.5px '+FONT,o.own?COL.ink:COL.muted));
+    g.outer.forEach(o=>{if(o.own||o.sib)halo(o.name,o.rx,o.ry+(o.own?24:20),'500 11.5px '+FONT,o.own?COL.ink:COL.muted)});
   }
   ctx.globalAlpha=1;
 }
@@ -571,6 +580,31 @@ function card(s,withPath){
     <div class="meta">${s.id}</div></li>`;
 }
 function relevance(s){let n=0;const t=s.t.toLowerCase();S.qt.forEach(w=>{if(t.indexOf(w)>=0)n+=3;if(s.hf&&s.hf.indexOf(w)>=0)n+=2});return n}
+function summarize(arr,where){
+  const n=arr.length;if(!n)return '';
+  const pct=(a,b)=>Math.round(100*a/b),L=x=>x.toLocaleString('en-GB'),out=[];
+  const top=(a,f,k)=>{const c={};a.forEach(x=>{const v=f(x);if(v)c[v]=(c[v]||0)+1});return Object.entries(c).sort((p,q)=>q[1]-p[1]).slice(0,k)};
+  const ys=arr.map(s=>s.y).filter(Boolean).sort((a,b)=>a-b),eff=arr.filter(s=>s.inv==='effect_on_people');
+  out.push(`${L(n)} ${VIEW==='v1'?(n===1?'work':'works'):(n===1?'study':'studies')}${ys.length?`: half were published in ${ys[Math.floor(ys.length/2)]} or later, and the earliest is from ${ys[0]}`:''}.`);
+  if(eff.length<n){
+    const rest=top(arr.filter(s=>s.inv!=='effect_on_people'),s=>INVL[s.inv],1)[0];
+    out.push(eff.length?`${pct(eff.length,n)}% study what AI does to people; most of the rest ${rest?`are about ${rest[0]==='Other'?'other topics':rest[0].toLowerCase()}`:'are about other topics'}.`:`None of them measure what AI does to people; most are about ${rest?(rest[0]==='Other'?'other topics':rest[0].toLowerCase()):'other topics'}.`);
+  }
+  const st=eff.filter(s=>s.dir!=='unk'&&s.dir!=='na');
+  if(st.length>=5){
+    const lab={enh:'an improvement',mix:'mixed results',dim:'a decline',none:'no effect',trans:'a transformation'};
+    const ps=top(st,s=>s.dir,3).map(([k,c])=>`${pct(c,st.length)}% found ${lab[k]}`);
+    out.push(`Of the ${L(st.length)} ${eff.length<n?'effect studies ':''}that report a direction, ${ps.join(', ')}.`);
+  }else if(eff.length)out.push('Few report a clear direction of effect.');
+  const stem=t=>new Set(t.split(/[^a-z]+/).filter(w=>w.length>2&&!['and','the','for','with'].includes(w)).map(w=>w.slice(0,6)));
+  const fo=[];top(eff.filter(s=>s.hf&&s.hf!=='none'),s=>s.hf,12).forEach(([t,c])=>{if(c<2||fo.length>=3)return;const a=stem(t);if(!fo.some(u=>{const b=stem(u);let c=0;a.forEach(x=>{if(b.has(x))c++});return c/Math.max(1,Math.min(a.size,b.size))>=0.5}))fo.push(t)});
+  const de=top(eff,s=>DES[s.de]&&s.de!=='unk'?DES[s.de].toLowerCase():'',2),po=top(eff,s=>s.pop&&s.pop!=='none'?s.pop:'',1)[0];
+  const bits=[];
+  if(fo.length){const pre=eff.length<n?'Among the effect studies, ':'';bits.push(fo.length>1?`${pre}${pre?'the':'The'} most common focuses are ${fo.join(', ')}.`:`${pre}${pre?'a':'A'} common focus is ${fo[0]}.`)}
+  if(de.length)bits.push(`The most common designs are ${de.map(([k,c])=>`${k} (${pct(c,eff.length)}%)`).join(' and ')}${po?`, most often of ${po[0]}`:''}.`);
+  if(bits.length)out.push(bits.join(' '));
+  return `<section class="sumry" aria-label="At a glance"><b>At a glance</b><p>${out.map(esc).join(' ')}</p><small>Written automatically from the coded fields and the current filters, not by a person.</small></section>`;
+}
 function renderCards(){
   const cap=byCapId(S.cap),sub=cap&&cap.subs.find(s=>s.id===S.sub);let cards='';
   if(!sub&&(S.qt.length||F.from!==Y0||F.to!==Y1)){
@@ -630,6 +664,7 @@ function render(){
   else lg=cap.subs.map(s=>({go:`sub:${cap.id}:${s.id}`,col:cap.id,name:s.name,n:visible(BYSUB[cap.id+'/'+s.id]||[]).length,base:(BYSUB[cap.id+'/'+s.id]||[]).length,on:!!sub&&sub.id===s.id}));
   const lgBtn=i=>`<button class="lg${i.on?' on':''}${i.base===0?' zero':''}" style="--c:var(--c-${i.col})" data-go="${i.go}"><i></i>${esc(i.name)} <b>${i.n.toLocaleString('en-GB')}</b></button>`;
   const LG=$('#legend');LG.className='legend flat';LG.innerHTML=lg.map(lgBtn).join('');
+  $('#sum').innerHTML=summarize(arr);
   renderCards();syncFilterUI();rvBar();syncHash();dirty=true;
 }
 

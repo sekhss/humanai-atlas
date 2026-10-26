@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Method · Atlas of Humans × AI</title>
+<meta name="description" content="How the Atlas of Humans × AI was built: where the studies come from, how they were coded and grouped, and what the limits are.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=Figtree:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{color-scheme:light;--bg:#fff;--surface:#fff;--ink:#15171c;--muted:#5f6674;--line:#e1e4ea;--soft:#f1f3f6;
+  --display:"Bricolage Grotesque","Avenir Next","Segoe UI",system-ui,sans-serif;--body:"Figtree","Segoe UI",system-ui,-apple-system,sans-serif;--mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0e1014;--surface:#171a20;--ink:#eceef3;--muted:#9aa1ae;--line:#2a2e38;--soft:#212530;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0e1014;--surface:#171a20;--ink:#eceef3;--muted:#9aa1ae;--line:#2a2e38;--soft:#212530;color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.65 var(--body)}
+.wrap{max-width:760px;margin:0 auto;padding:28px 24px 72px}
+a{color:var(--ink)}
+.back{font:500 13px var(--mono);text-decoration:none;color:var(--muted)}
+.back:hover{color:var(--ink)}
+h1{margin:18px 0 6px;font:800 40px/1.05 var(--display);letter-spacing:-.02em}
+.lede{margin:0 0 8px;font-size:18px;color:var(--muted)}
+.stamp{font:400 12px var(--mono);color:var(--muted)}
+.callout{margin:22px 0;padding:14px 16px;background:var(--soft);border-radius:12px;font-size:15px}
+h2{margin:40px 0 8px;font:700 24px/1.2 var(--display);letter-spacing:-.01em}
+h3{margin:22px 0 4px;font:600 16px/1.3 var(--body)}
+p{margin:0 0 12px}
+ul{margin:0 0 12px;padding-left:22px}
+li{margin:0 0 6px}
+table{width:100%;border-collapse:collapse;margin:8px 0 16px;font-size:14.5px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font:600 12px var(--mono);letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+td.n{font-family:var(--mono);white-space:nowrap}
+code{font:500 13px var(--mono);background:var(--soft);padding:1px 5px;border-radius:5px}
+.foot{margin-top:48px;padding-top:14px;border-top:1px solid var(--line);font:400 12px/1.6 var(--mono);color:var(--muted)}
+@media (max-width:560px){h1{font-size:32px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<a class="back" href="index.html">← Back to the atlas</a>
+<h1>How this atlas was made</h1>
+<p class="lede">A map of research on how AI affects people, built from a large search of the literature and read by a language model, not yet checked by people.</p>
+<p class="stamp">Built 2026-10-26 · search run 2026-10-19 · counts below are for this build</p>
+
+<div class="callout"><b>Read this first.</b> Every label you see on the atlas (the direction of an effect, the study type, the one-sentence finding, the group a study sits in) was produced by an AI model from a study's title and abstract. None of it has been verified by a person yet. Treat the atlas as a way to explore and find studies, not as evidence in itself. Always open the paper before relying on a claim.</div>
+
+<h2>1. Where the studies come from</h2>
+<p>The studies come from <b>OpenAlex</b>, an open index of scholarly work. I searched it with a fixed list of terms, split into three eras so the vocabulary matches the period:</p>
+<ul>
+<li><b>Symbolic era:</b> expert system, decision support system, decision aid, intelligent tutoring system, computer-assisted instruction, automation bias, automation complacency.</li>
+<li><b>Machine-learning era:</b> algorithmic recommendation, recommender system, machine learning, smart assistant, social robot, affective computing.</li>
+<li><b>Generative-AI era:</b> generative AI, large language model, ChatGPT, chatbot, AI companion, copilot.</li>
+</ul>
+<p>Each AI term was combined with each of thirteen human-side terms: attention, memory, critical thinking, learning, creativity, skill, expertise, trust, empathy, loneliness, wellbeing, autonomy and deskilling. Each combination returned up to 400 results. Duplicates were removed, matching on DOI first.</p>
+<p>That gives <b>57,741 works</b>: 47,209 peer-reviewed and 10,532 preprints. An era is set by the <b>publication year</b>, not by the technology a paper discusses.</p>
+<p>This is a broad net, not a complete census. Studies that use different words, work in other fields, or are not in OpenAlex will be missing, and the search terms are in English. I have not yet estimated how much of the field the index misses.</p>
+
+<h2>2. How each work was coded</h2>
+<p>Each of the 57,741 works was read by <b>Claude Haiku 5.5</b>, an AI model, which filled in a fixed set of fields from the title and abstract. For 51,043 works the abstract was available; for 6,698 only the title was, and those codings carry lower confidence. The model was told to write "not stated" rather than guess.</p>
+<p>The fields include: what the work is about (<i>topic of the work</i>), the human capacity or outcome it concerns (<i>human focus</i>, for example "critical thinking" or "loneliness"), who was studied, the setting, the kind of AI, the study design, one sentence on what was found, and a confidence score.</p>
+
+<h3>Topic of the work</h3>
+<table>
+<tr><th>Label</th><th>Meaning</th></tr>
+<tr><td>Effect of AI on people</td><td>AI is the exposure and a human capacity or outcome is studied. <b>These are the 11,007 studies the human-focus view shows.</b></td></tr>
+<tr><td>How people use AI</td><td>Use, adoption and attitudes.</td></tr>
+<tr><td>AI built for people</td><td>A system designed to help people.</td></tr>
+<tr><td>AI systems themselves</td><td>No human side; the work builds or benchmarks a system.</td></tr>
+<tr><td>Other</td><td>Not about AI.</td></tr>
+</table>
+
+<h3>Direction of effect</h3>
+<p>For studies of AI's effect on people, the model recorded the direction from what the abstract reports, not from what it expected:</p>
+<table>
+<tr><th>Label</th><th>Meaning</th><th>Studies</th></tr>
+<tr><td>Enhances</td><td>The human capacity or outcome improves.</td><td class="n">3,615</td></tr>
+<tr><td>Mixed</td><td>Both, or it depends on conditions.</td><td class="n">2,516</td></tr>
+<tr><td>Diminishes</td><td>The capacity or outcome declines.</td><td class="n">2,120</td></tr>
+<tr><td>Transforms</td><td>Changes in kind, not just in degree.</td><td class="n">40</td></tr>
+<tr><td>No effect</td><td>No detectable effect.</td><td class="n">210</td></tr>
+<tr><td>Not stated</td><td>The available text does not say.</td><td class="n">2,447</td></tr>
+</table>
+<p>Works that are not studies of AI's effect on people show a grey "no effect studied" instead.</p>
+
+<h3>What was checked by a person</h3>
+<p>To design the scheme, 1,000 works were coded by hand in a working session, with direction and study design recorded for 380 of them. That sample guided the definitions. It is <b>not</b> a check of the model's coding of the full set. A reviewed sample, so that an accuracy figure can be quoted, is planned.</p>
+<p>Studies are flagged <b>"needs checking"</b> when the model's confidence is below 0.6, only the title was available, or the direction is not stated: 3,051 of the 11,007 effect studies.</p>
+
+<h2>3. What the atlas shows by default</h2>
+<ul>
+<li>The <b>Human focus</b> view shows the 11,007 studies of AI's effect on people. Of these, 4,107 are reviews, commentary or technical papers; they are <b>counted separately and left out by default</b>, so the default is 6,900 studies. You can include them with one click.</li>
+<li>The <b>Topic &amp; technology</b> view shows all 57,741 works, including the many that are about building or using AI rather than its effects.</li>
+<li>731 of the effect studies are not in English. They form their own group, sorted by topic, kept apart from the central map and not linked to the others.</li>
+</ul>
+
+<h2>4. How the groups are made</h2>
+<h3>Human focus view</h3>
+<p>The short phrase describing each study's human focus was turned into a numerical embedding (using the all-MiniLM-L6-v2 model), and the phrases were clustered with hierarchical (Ward) clustering. Cutting the resulting tree at fixed similarity levels gives <b>sub-areas</b> (110 of them) and <b>groups</b> (20). A group that grew too large was split by sub-area, with each part joining the nearest group when it was close enough. Groups are then gathered into <b>7 themes</b> by cutting a tree of the groups.</p>
+<p>Because the number of groups comes from cut heights rather than a target, groups differ widely in size. There is no natural break in the data; another cut would give a different, equally defensible map.</p>
+<p><b>Human edits.</b> After the automatic step the project lead regrouped some themes by hand: for example, "Work &amp; Professional Judgement" combines work, clinical reasoning, law, tax and finance, and a few sub-areas were moved to groups where they fit better. Group and theme names were drafted by Claude, and some were written by hand.</p>
+<h3>Topic &amp; technology view</h3>
+<p>Each work's title and abstract were embedded and clustered (UMAP and HDBSCAN, repeated within clusters), then the resulting top-level topic clusters were gathered into 18 groups and <b>10 themes</b> by cutting a tree of their centres, the same way. These clusters group works by subject and technology, not by what they say about people.</p>
+
+<h2>5. How to read the map</h2>
+<ul>
+<li>Each <b>dot is a bundle</b> of studies with the same direction of effect. The caption says how many studies a dot stands for; at the lowest level each dot is one study.</li>
+<li>A <b>line</b> joins two groups when studies in one also bear on the other, as coded by the model. A thicker line means more such studies.</li>
+<li>Colours by <i>area</i> mark groups. Colours by <i>effect</i> mark direction: green enhances, amber mixed, red diminishes, blue transforms, grey no effect, hollow not stated.</li>
+<li>Counts update with the filters, the search and the year range.</li>
+</ul>
+
+<h2>6. Known limits</h2>
+<ul>
+<li><b>Nothing is verified.</b> Expect errors in direction, study type and grouping. The model reads abstracts only, not full texts.</li>
+<li><b>"Transforms" is probably under-counted.</b> The model used it for only 40 studies, while hand coding used it more often.</li>
+<li><b>Abstract-only and title-only coding.</b> Where an abstract is missing (6,698 works) the coding rests on the title. Only a small share of missing abstracts could be filled in from other sources.</li>
+<li><b>One search, in English.</b> Coverage depends on the search terms above and on OpenAlex, and favours English-language, recent work.</li>
+<li><b>Groups are a choice.</b> They are one reasonable way to organise the field, shaped by the cut heights and by hand edits. A study can bear on more than one area but sits in one.</li>
+<li><b>Findings are paraphrased.</b> The one-sentence finding is the model's own wording of what the abstract says, and can be wrong or incomplete.</li>
+</ul>
+
+<h2>7. Data and privacy</h2>
+<p>The atlas shows each study's title, authors, year, venue and DOI from OpenAlex, plus the model-written fields above. Abstracts are not republished. The download buttons export the same fields for whatever slice you are viewing, flagged as AI-coded.</p>
+
+<h2>8. Corrections and contact</h2>
+<p>If you find a study that is mislabelled, miscategorised or missing, or you want to ask about the method, please write to <a href="mailto:sns46@cam.ac.uk">sns46@cam.ac.uk</a>. Corrections are especially useful because the labels have not yet been checked by people.</p>
+
+<p class="foot">Atlas of Humans × AI · prototype · built 2026-10-26 · AI-coded, not yet verified by people.</p>
+</div>
+</body>
+</html>
