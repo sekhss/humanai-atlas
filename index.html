@@ -65,9 +65,16 @@ header{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:cen
 .chip span{display:inline-block;padding:6px 11px;border-radius:999px;border:1px solid var(--line);background:var(--bg);font-size:13px;font-weight:500;color:var(--muted);transition:background .12s,color .12s,border-color .12s}
 .chip input:checked+span{background:var(--ink);border-color:var(--ink);color:var(--bg)}
 .chip input:focus-visible+span,:focus-visible{outline:2px solid var(--d-trans);outline-offset:2px}
-.years{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.years label{display:flex;flex-direction:column;gap:2px;font:500 12px var(--mono);color:var(--muted)}
-.years input{width:100%;accent-color:var(--ink);margin:6px 0 0}
+.dual{position:relative;height:28px}
+.dtrack{position:absolute;left:9px;right:9px;top:12px;height:4px;background:var(--soft);border-radius:2px}
+.dfill{position:absolute;top:0;bottom:0;background:var(--ink);border-radius:2px}
+.dual input{position:absolute;left:0;top:0;width:100%;height:28px;margin:0;background:none;pointer-events:none;-webkit-appearance:none;appearance:none}
+.dual input::-webkit-slider-runnable-track{background:transparent;height:28px}
+.dual input::-moz-range-track{background:transparent;height:28px}
+.dual input::-webkit-slider-thumb{pointer-events:auto;-webkit-appearance:none;appearance:none;width:18px;height:18px;margin-top:5px;border-radius:50%;background:var(--ink);border:2px solid var(--bg);box-shadow:0 0 0 1px var(--ink);cursor:grab}
+.dual input::-moz-range-thumb{pointer-events:auto;width:14px;height:14px;border-radius:50%;background:var(--ink);border:2px solid var(--bg);box-shadow:0 0 0 1px var(--ink);cursor:grab}
+#yfrom{z-index:3}#yto{z-index:2}
+.dlabels{display:flex;justify-content:space-between;font:500 12px var(--mono);color:var(--muted)}
 details.grp{border-top:1px solid var(--line);padding-top:12px}
 details.grp summary{cursor:pointer;font:600 13px/1.3 var(--body);display:flex;justify-content:space-between;list-style:none}
 details.grp summary::-webkit-details-marker{display:none}
@@ -98,12 +105,18 @@ i.unk{background:none!important;border:1.6px solid var(--d-unk)}
 .stackbar i{display:block;min-width:0}
 .stackbar i.unk{background:repeating-linear-gradient(135deg,var(--d-unk) 0 2px,transparent 2px 5px)!important;border:0;opacity:.7}
 .hist{display:flex;flex-direction:column;gap:4px}
-.hist .bars{display:flex;align-items:flex-end;gap:2px;height:46px}
-.hist .bars i{flex:1;background:var(--hc,var(--ink));opacity:.85;border-radius:2px 2px 0 0;min-height:2px}
-.hist .bars i.z{opacity:.25}
+.hist .bars{display:flex;align-items:stretch;gap:2px;height:56px}
+.yb{flex:1;min-width:0;display:flex;align-items:flex-end;background:none;border:0;padding:0;cursor:pointer;border-radius:3px}
+.yb i{display:block;width:100%;background:var(--hc,var(--ink));opacity:.85;border-radius:2px 2px 0 0;min-height:2px}
+.yb.z i{opacity:.25}
+.yb:hover{background:var(--soft)}
+.yb.sel{background:var(--soft);outline:1px solid var(--ink)}
+.yb.sel i{opacity:1}
 .hist .ax{display:flex;justify-content:space-between;font:400 10.5px var(--mono);color:var(--muted)}
 .note{margin:0;font-size:12.5px;color:var(--muted)}
 .note button{background:none;border:0;padding:0;font-weight:600;color:var(--ink);text-decoration:underline;cursor:pointer;font-size:12.5px}
+.back{align-self:flex-start;display:inline-flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:7px 13px;font-weight:600;font-size:13.5px;cursor:pointer}
+.back:hover{border-color:var(--muted)}
 .gtop{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
 .gtop .seg button{padding:6px 12px;font-size:13px}
 .graph{position:relative;width:100%;aspect-ratio:1/1}
@@ -178,6 +191,7 @@ i.unk{background:none!important;border:1.6px solid var(--d-unk)}
   </header>
   <div class="layout">
     <div class="gcol">
+      <button class="back" id="back" data-go="root" hidden>‹ Back</button>
       <div class="gtop">
         <div class="seg" role="group" aria-label="Colour the dots by"><button id="cArea" aria-pressed="true">Colour: area</button><button id="cDir" aria-pressed="false">Colour: effect</button></div>
         <button class="rot" id="rot" aria-pressed="true">Pause</button>
@@ -253,7 +267,7 @@ function isDef(k){const d=defOf(k);return F[k].size===d.length&&d.every(v=>F[k].
 function activeCount(){let n=0;Object.keys(OPTS).forEach(k=>{if(!isDef(k))n++});if(F.from!==Y0||F.to!==Y1)n++;return n}
 const confOf=s=>s.cf>=70?'high':s.cf>=50?'med':'low';
 function passes(s,ignore){
-  if(s.y&&(s.y<F.from||s.y>F.to))return false;
+  if(ignore!=='year'&&s.y&&(s.y<F.from||s.y>F.to))return false;
   if(!F.rq.has(s.flag?'flag':'ok')||!F.inv.has(s.inv)||!F.dir.has(s.dir)||!F.ai.has(s.ai)||!F.status.has(s.st)||!F.lang.has(s.lang==='en'?'en':'other')||!F.conf.has(confOf(s)))return false;
   if(ignore!=='design'&&s.inv==='effect_on_people'&&!F.design.has(s.de))return false;
   if(S.qt.length&&!S.qt.every(t=>s.q.indexOf(t)>=0))return false;
@@ -302,7 +316,7 @@ function readColors(){
   const cs=getComputedStyle(document.documentElement);
   ['bg','ink','muted','line'].forEach(k=>COL[k]=cs.getPropertyValue('--'+k).trim());
   DIRS_ALL.forEach(d=>COL['d-'+d.id]=cs.getPropertyValue('--d-'+d.id).trim());
-  THEMES.forEach((t,i)=>{COL['t-'+i]=themeColor(i);document.documentElement.style.setProperty('--t-'+i,COL['t-'+i])});
+  THEMES.forEach((t,i)=>{COL['t-'+i]=themeColor(i);COL['c-t'+i]=COL['t-'+i];document.documentElement.style.setProperty('--t-'+i,COL['t-'+i]);document.documentElement.style.setProperty('--c-t'+i,COL['t-'+i])});
   CAPS.forEach((c,i)=>{COL['c-'+c.id]=capColor(c);document.documentElement.style.setProperty('--c-'+c.id,COL['c-'+c.id])});
   dirty=true;
 }
@@ -325,23 +339,33 @@ function aggLinks(items,fromKey){ // counts of studies per target hub, for the "
   const m={};items.forEach(s=>{if(s.also&&!isNE(s.cap)&&!isNE(s.also)){const k=fromKey(s)+'>'+s.also;m[k]=(m[k]||0)+1}});return m;
 }
 
+function rootNodes(){
+  const out=[];
+  THEMES.forEach((t,ti)=>{const ids=CAPS.filter(c=>c.theme===ti&&!c.ne).map(c=>c.id);if(ids.length)out.push({key:'t'+ti,name:t.name,capIds:ids,ne:false,go:ids.length===1?'cap:'+ids[0]:'theme:'+ti,theme:ti})});
+  CAPS.filter(c=>c.ne).forEach(c=>out.push({key:c.id,name:c.name,capIds:[c.id],ne:true,go:'cap:'+c.id,theme:-1}));
+  return out;
+}
 function buildGraph(cap,sub){
-  const g={mode:sub?'sub':cap?'cap':'all',hubs:[],subs:[],dots:[],outer:[],arcs:[],links:[],capId:cap?cap.id:null,subName:sub?sub.name:'',k:1};
+  const g={mode:sub?'sub':cap?'cap':S.theme!==null?'theme':'all',hubs:[],subs:[],dots:[],outer:[],arcs:[],links:[],capId:cap?cap.id:null,subName:sub?sub.name:'',k:1};
   const hubById={},outerById={},subNode={};
-  if(g.mode==='all'){
-    const vis=STUDIES.filter(s=>passes(s)),nR=CAPS.filter(c=>!c.ne).length,ringR=(nR>16?234:nR>12?244:nR>8?226:200),stag=nR>16;let ri=0;g.themeArcs=[];
-    g.k=Math.max(1,Math.ceil(Math.max(...CAPS.map(c=>visible(BYCAP[c.id]||[]).length),1)/100));
-    CAPS.forEach(c=>{
-      let ha,p,fixed=!!c.ne;
-      let inner=false;
-      if(c.ne){ha=Math.PI/4;p=[598,584];g.ne={x:598,y:584,r:86}}else{const si=ri++;ha=-Math.PI/2+si*TAU/nR;inner=stag&&si%2===1;p=polar(CX,CY,inner?ringR-62:ringR,ha)}
-      const items=visible(BYCAP[c.id]||[]),hub={id:c.id,x:p[0],y:p[1],name:c.name,fixed,n:items.length,inner,dim:S.theme!==null&&c.theme!==S.theme,theme:c.theme,ha};g.hubs.push(hub);hubById[c.id]=hub;
-      bundle(items,g.k).forEach((b,i)=>{const u=sf(i),r0=15;g.dots.push({b,cap:c.id,x:p[0]+u[0]*3.4*(1+r0/(8*Math.sqrt(i+1))),y:p[1]+u[1]*3.4*(1+r0/(8*Math.sqrt(i+1))),r:2.6,home:hub,fixed})});
+  if(g.mode==='all'||g.mode==='theme'){
+    const nodes=g.mode==='all'?rootNodes():CAPS.filter(c=>c.theme===S.theme).map(c=>({key:c.id,name:c.name,capIds:[c.id],ne:c.ne,go:'cap:'+c.id,theme:c.theme}));
+    const nR=nodes.filter(n=>!n.ne).length,R=nR<=4?150:nR<=7?188:214,big=nR<=10;
+    const data=nodes.map(n=>({n,items:[].concat(...n.capIds.map(id=>visible(BYCAP[id]||[])))}));
+    g.k=Math.max(1,Math.ceil(Math.max(...data.map(d=>d.items.length),1)/100));
+    let ri=0;const nodeOf={};
+    data.forEach(({n,items})=>{
+      let p,ha=0;
+      if(n.ne){p=[598,584]}else{ha=-Math.PI/2+(ri++)*TAU/Math.max(nR,1);p=polar(CX,CY,R,ha)}
+      const hub={id:n.key,x:p[0],y:p[1],name:n.name,fixed:!!n.ne,n:items.length,go:n.go,theme:n.theme,ha,isTheme:g.mode==='all',capIds:n.capIds,ne:!!n.ne};
+      g.hubs.push(hub);hubById[n.key]=hub;n.capIds.forEach(id=>{nodeOf[id]=n.key});
+      const sp=big?4.1:3.4,rr=big?3.2:2.6;
+      let rad=14;bundle(items,g.k).forEach((b,i)=>{const u=sf(i),f=sp*(1+15/(8*Math.sqrt(i+1))),dx=u[0]*f,dy=u[1]*f;rad=Math.max(rad,Math.hypot(dx,dy)+rr+2);g.dots.push({b,cap:n.key,x:p[0]+dx,y:p[1]+dy,r:rr,home:hub,fixed:!!n.ne})});hub.rad=rad;
     });
-    THEMES.forEach((t,ti)=>{const hs=g.hubs.filter(h=>h.theme===ti);if(hs.length){const slot=TAU/nR;g.themeArcs.push({t:ti,a0:hs[0].ha-slot/2+0.035,a1:hs[hs.length-1].ha+slot/2-0.035,dim:S.theme!==null&&S.theme!==ti})}});
-    const agg=aggLinks(vis,s=>s.cap),per={};
-    Object.keys(agg).forEach(k=>{const[a,b]=k.split('>');(per[a]=per[a]||[]).push([b,agg[k]])});
-    Object.keys(per).forEach(a=>{const hubN=(hubById[a]||{n:1}).n;per[a].sort((x,y)=>y[1]-x[1]).slice(0,3).forEach(([b,n])=>{if(n>=Math.max(6,0.03*hubN)&&hubById[b])g.links.push({from:hubById[a],to:hubById[b],n,cap:a})})});
+    const m={};
+    data.forEach(({items})=>items.forEach(s=>{if(!s.also)return;const a=nodeOf[s.cap],b=nodeOf[s.also];if(a&&b&&a!==b&&!hubById[a].ne&&!hubById[b].ne){const k=a+'>'+b;m[k]=(m[k]||0)+1}}));
+    const per={};Object.keys(m).forEach(k=>{const[a,b]=k.split('>');(per[a]=per[a]||[]).push([b,m[k]])});
+    Object.keys(per).forEach(a=>{const hubN=hubById[a].n;per[a].sort((x,y)=>y[1]-x[1]).slice(0,3).forEach(([b,n])=>{if(n>=Math.max(6,0.03*hubN))g.links.push({from:hubById[a],to:hubById[b],n,cap:a})})});
   }else if(g.mode==='cap'){
     const hubItems=visible(BYCAP[cap.id]||[]);g.k=Math.max(1,Math.ceil(Math.max(...cap.subs.map(s=>visible(BYSUB[cap.id+'/'+s.id]||[]).length),1)/70));
     const hub={id:cap.id,x:CX,y:CY,name:cap.name,n:hubItems.length};g.hubs.push(hub);
@@ -393,9 +417,7 @@ function draw(t){
   const pos=n=>n.fixed?[n.x,n.y]:rot(n.x,n.y);
   g.all.forEach(n=>{const p=pos(n);n.rx=p[0];n.ry=p[1];if(n.lx!==undefined){const q=n.fixed?[n.lx,n.ly]:rot(n.lx,n.ly);n.rlx=q[0];n.rly=q[1]}});
   g.links.forEach(l=>{if(l.from.center){l.from.rx=CX;l.from.ry=CY}else if(l.from.rx===undefined){const p=pos(l.from);l.from.rx=p[0];l.from.ry=p[1]}});
-  if(g.ne){ctx.globalAlpha=age*0.4;ctx.strokeStyle=COL.muted;ctx.lineWidth=1.2;ctx.setLineDash([5,5]);ctx.beginPath();ctx.arc(g.ne.x,g.ne.y,g.ne.r,0,TAU);ctx.stroke();ctx.setLineDash([])}
   ctx.lineCap='round';
-  if(g.mode==='all'){ctx.lineWidth=5;g.themeArcs.forEach(a=>{ctx.globalAlpha=age*(a.dim?0.12:0.9);ctx.strokeStyle=COL['t-'+a.t];ctx.beginPath();ctx.arc(CX,CY,340,a.a0+theta,a.a1+theta);ctx.stroke()})}
   g.links.forEach(l=>{
     const mx=(l.from.rx+l.to.rx)/2,my=(l.from.ry+l.to.ry)/2,cx=mx+(CX-mx)*0.38,cy=my+(CY-my)*0.38;
     ctx.globalAlpha=age*0.17*((l.from.dim||l.to.dim)?0.2:1);ctx.lineWidth=Math.min(4,0.6+0.25*Math.sqrt(l.n));ctx.strokeStyle=COL['c-'+l.cap]||COL.muted;
@@ -420,12 +442,11 @@ function draw(t){
   g.outer.forEach(o=>{ctx.globalAlpha=age;ctx.fillStyle=COL['c-'+o.id];ctx.strokeStyle=COL.bg;ctx.lineWidth=3;ctx.beginPath();ctx.arc(o.rx,o.ry,o.r,0,TAU);ctx.fill();ctx.stroke();
     if(o.own){ctx.strokeStyle=COL['c-'+o.id];ctx.lineWidth=2;ctx.beginPath();ctx.arc(o.rx,o.ry,o.r+5,0,TAU);ctx.stroke()}});
   ctx.globalAlpha=age;
-  if(g.mode==='all'){
-    g.hubs.forEach(h=>{ctx.font='700 12.5px '+FONT;const ls=wrap(h.name,92).slice(0,2),n=ls.length+1;ctx.globalAlpha=age*(h.dim?0.22:1);
+  if(g.mode==='all'||g.mode==='theme'){
+    g.hubs.forEach(h=>{ctx.font='700 12.5px '+FONT;const ls=wrap(h.name,104).slice(0,3),n=ls.length+1;ctx.globalAlpha=age*(h.dim?0.22:1);
       let dx=0,dy=1;if(!h.fixed){const vx=h.rx-CX,vy=h.ry-CY,L=Math.hypot(vx,vy)||1;dx=vx/L*(h.inner?-1:1);dy=vy/L*(h.inner?-1:1)}
-      const d=30+(n*14/2)*Math.abs(dy)+44*Math.abs(dx),cx=Math.max(56,Math.min(W-56,h.rx+dx*d)),cy=h.ry+dy*d;
+      const d=(h.rad||30)+8+(n*14/2)*Math.abs(dy)+44*Math.abs(dx),cx=Math.max(56,Math.min(W-56,h.rx+dx*d)),cy=h.ry+dy*d;
       ls.forEach((l,i)=>halo(l,cx,cy+(i-(n-1)/2)*14,'700 12.5px '+FONT,COL.ink));halo(String(h.n),cx,cy+(ls.length-(n-1)/2)*14,'400 11px '+FONT,COL.muted)});ctx.globalAlpha=age;
-    if(g.ne)halo('kept apart, not linked',g.ne.x,g.ne.y+g.ne.r+14,'500 11.5px '+FONT,COL.muted);
   }else if(g.mode==='cap'){
     g.hubs.forEach(h=>{ctx.font='700 17px '+FONT;const ls=wrap(h.name,120);ls.forEach((l,i)=>halo(l,h.rx,h.ry+36+i*18,'700 17px '+FONT,COL.ink))});
     g.subs.forEach(s=>{ctx.font='600 12px '+FONT;const lines=wrap(s.name,104).slice(0,3),h=14,y0=s.rly-(lines.length*h)/2;
@@ -453,7 +474,7 @@ function pick(x,y){
   if(best)return best;
   if(g.mode==='sub'){for(const o of g.outer)if(d(o)<22)return{go:'cap:'+o.id,out:o};if(Math.hypot(x-CX,y-CY)<50)return{go:'cap:'+g.capId};return null}
   if(g.mode==='cap'){for(const o of g.outer)if(d(o)<22)return{go:'cap:'+o.id,out:o};for(const s of g.subs)if(d(s)<s.cr+10)return{go:'sub:'+g.capId+':'+s.id,node:s};if(Math.hypot(x-CX,y-CY)<36)return{go:'root'};return null}
-  bd=70;g.hubs.forEach(h=>{const k=d(h);if(k<bd){bd=k;best={go:'cap:'+h.id,hub:h}}});
+  bd=70;g.hubs.forEach(h=>{const k=d(h);if(k<bd){bd=k;best={go:h.go,hub:h}}});
   return best;
 }
 function pt(e){const r=cv.getBoundingClientRect();return[(e.clientX-r.left)/r.width*W,(e.clientY-r.top)/r.height*W]}
@@ -462,8 +483,10 @@ function showTip(e,h){
   if(!h){tip.style.display='none';return}
   let html='';
   if(h.dot){const b=h.dot.b,n=b.items.length;html=n===1?`<b>${esc(b.items[0].t)}</b>${b.items[0].y} · ${esc(DIRS.find(d=>d.id===b.dir).label)}`:`<b>${n} studies</b>${esc(DIRS.find(d=>d.id===b.dir).label)}${h.dot.home&&h.dot.home.name?' · '+esc(h.dot.home.name):''}`}
-  else if(h.hub){const c=byCapId(h.hub.id);G.prev=G.prev||{};const top=G.prev[c.id]||(G.prev[c.id]=c.subs.map(x=>[x.name,visible(BYSUB[c.id+'/'+x.id]||[]).length]).sort((a,b)=>b[1]-a[1]).slice(0,3).filter(x=>x[1]));
-    html=`<b>${esc(c.name)}</b>${h.hub.n.toLocaleString('en-GB')} ${VIEW==='v1'?'works':'studies'} match the filters${c.desc?'<br>'+esc(c.desc):''}${top.length?'<br><span style="color:var(--muted)">Largest: '+top.map(x=>esc(x[0])+' ('+x[1].toLocaleString('en-GB')+')').join('; ')+'</span>':''}`}
+  else if(h.hub){const hb=h.hub,one=hb.capIds.length===1,c=one?byCapId(hb.capIds[0]):null;G.prev=G.prev||{};
+    const list=G.prev[hb.id]||(G.prev[hb.id]=(one?c.subs.map(x=>[x.name,visible(BYSUB[c.id+'/'+x.id]||[]).length]):hb.capIds.map(id=>[byCapId(id).name,visible(BYCAP[id]||[]).length])).sort((a,b)=>b[1]-a[1]).slice(0,3).filter(x=>x[1]));
+    const desc=one?c.desc:(THEMES[hb.theme]||{}).description||'';
+    html=`<b>${esc(hb.name)}</b>${hb.n.toLocaleString('en-GB')} ${VIEW==='v1'?'works':'studies'} match the filters${desc?'<br>'+esc(desc):''}${list.length?'<br><span style="color:var(--muted)">Largest: '+list.map(x=>esc(x[0])+' ('+x[1].toLocaleString('en-GB')+')').join('; ')+'</span>':''}`}
   else if(h.out)html=`<b>${esc(h.out.name)}</b>Go to this area`;
   else if(h.node)html=`<b>${esc(h.node.name)}</b>${h.node.n} studies match the filters`;
   else{tip.style.display='none';return}
@@ -474,7 +497,8 @@ cv.addEventListener('click',e=>{
   if(h.go)navigate(h.go);
   else if(h.dot){const d=h.dot;
     if(G.mode==='sub'&&d.b.items.length===1)revealCard(d.b.items[0]);
-    else if(G.mode!=='sub'){S.theme=null;S.cap=d.cap;S.sub=d.sub||null;if(S.sub)render();else{S.sub=null;render()}}}
+    else if(G.mode==='all'||G.mode==='theme')navigate(d.home.go);
+    else if(G.mode==='cap')navigate('sub:'+d.cap+':'+d.sub)}
 });
 cv.addEventListener('pointermove',e=>{const p=pt(e),h=pick(p[0],p[1]);cv.style.cursor=h&&(h.go||h.dot)?'pointer':'default';showTip(e,h)});
 cv.addEventListener('pointerenter',e=>{if(e.pointerType==='mouse')hover=true});
@@ -498,18 +522,18 @@ function statsBlock(arr,scopeLen,color,scope){
   const c=tally(arr),n=arr.length;
   const chips=DIRS.map(d=>`<div class="stat" title="${esc(d.sub)}"><b>${c[d.id].toLocaleString('en-GB')}</b><span><i class="${d.id==='unk'?'unk':''}" style="background:var(--d-${d.id})"></i>${d.label}</span></div>`).join('');
   const bar=n?DIRS.map(d=>c[d.id]?`<i class="${d.id==='unk'?'unk':''}" title="${d.label}: ${c[d.id]}" style="flex:${c[d.id]};background:var(--d-${d.id})"></i>`:'').join(''):'';
-  const keyOf=y=>!y?Y0:y<1990?Math.floor(y/10)*10:y;const b={};arr.forEach(s=>{const k=keyOf(s.y);b[k]=(b[k]||0)+1});
+  const keyOf=y=>!y?Y0:y<1990?Math.floor(y/10)*10:y;const b={};scope.filter(s=>s.y&&passes(s,'year')).forEach(s=>{const k=keyOf(s.y);b[k]=(b[k]||0)+1});
   const lo=keyOf(Y0),keys=[];for(let k=lo;k<=Y1;k=k<1990?k+10:k+1)keys.push(k);
   const hm=Math.max(1,...keys.map(k=>b[k]||0));
-  const bars=keys.map(k=>{const v=b[k]||0,lbl=k<1990?k+'s':k;return `<i class="${v?'':'z'}" style="height:${v?Math.max(6,v/hm*100):4}%" title="${lbl}: ${v}"></i>`}).join('');
+  const bars=keys.map(k=>{const v=b[k]||0,lbl=k<1990?k+'s':k,a=k,z=k<1990?Math.min(k+9,Y1):k,sel=F.from===a&&F.to===z;return `<button class="yb${sel?' sel':''}${v?'':' z'}" data-yr="${a}-${z}" title="${lbl}: ${v.toLocaleString('en-GB')}" aria-label="Show studies from ${lbl}: ${v}" aria-pressed="${sel}"><i style="height:${v?Math.max(6,v/hm*100):4}%"></i></button>`}).join('');
   let note='';
-  const sep=scope.filter(s=>s.inv==='effect_on_people'&&!F.design.has(s.de)&&passes(s,'design')).length;
-  if(sep)note=`<p class="note">${sep.toLocaleString('en-GB')} review${sep===1?'':'s'}, commentary and technical paper${sep===1?'':'s'} counted separately. <button data-act="reviews">Include</button></p>`;
+  const sep=scope.filter(s=>s.inv==='effect_on_people'&&SEPARATE.includes(s.de)&&passes(s,'design')).length,incl=SEPARATE.every(v=>F.design.has(v));
+  if(sep)note=incl?`<p class="note">${sep.toLocaleString('en-GB')} review${sep===1?'':'s'}, commentary and technical paper${sep===1?' is':'s are'} included. <button data-act="noreviews">Exclude</button></p>`:`<p class="note">${sep.toLocaleString('en-GB')} review${sep===1?'':'s'}, commentary and technical paper${sep===1?'':'s'} counted separately. <button data-act="reviews">Include</button></p>`;
   return `<section class="stats" style="--hc:${color}" aria-label="Summary">
     <div class="total"><span class="big">${n.toLocaleString('en-GB')}</span><span>${n===1?'study':'studies'}</span><span class="of">of ${scopeLen.toLocaleString('en-GB')} in scope</span></div>
     <div class="chips">${chips}</div>
     <div class="stackbar" role="img" aria-label="${DIRS.map(d=>d.label+' '+c[d.id]).join(', ')}">${bar}</div>
-    <div class="hist" aria-label="Studies per year"><div class="bars">${bars}</div><div class="ax"><span>${lo<1990?lo+'s':lo}</span><span>studies per year</span><span>${Y1}</span></div></div>
+    <div class="hist" aria-label="Studies per year"><div class="bars">${bars}</div><div class="ax"><span>${lo<1990?lo+'s':lo}</span><span>click a bar to see those studies</span><span>${Y1}</span></div></div>
     ${note}</section>`;
 }
 function card(s,withPath){
@@ -534,9 +558,9 @@ function card(s,withPath){
 function relevance(s){let n=0;const t=s.t.toLowerCase();S.qt.forEach(w=>{if(t.indexOf(w)>=0)n+=3;if(s.hf&&s.hf.indexOf(w)>=0)n+=2});return n}
 function renderCards(){
   const cap=byCapId(S.cap),sub=cap&&cap.subs.find(s=>s.id===S.sub);let cards='';
-  if(!sub&&S.qt.length){
+  if(!sub&&(S.qt.length||F.from!==Y0||F.to!==Y1)){
     const arr=visible(scopeOf()).map(s=>[relevance(s),s]).sort((a,b)=>b[0]-a[0]||b[1].y-a[1].y).map(x=>x[1]),shown=S.page.q||PAGE;
-    cards=arr.length?`<h3 class="gh">${arr.length.toLocaleString('en-GB')} result${arr.length===1?'':'s'}<span>best matches first</span></h3><ul class="list">${arr.slice(0,shown).map(s=>card(s,true)).join('')}</ul>`+(arr.length>shown?`<button class="more" data-more="q">Show ${Math.min(PAGE,arr.length-shown)} more of ${(arr.length-shown).toLocaleString('en-GB')}</button>`:''):`<div class="empty"><b>Nothing matches “${esc(S.q)}”</b><span>Try fewer words, or turn off some filters.${VIEW==='v1'?' Works outside the effect-on-people set are searched by title only.':''}</span><button data-act="reset">Reset filters and search</button></div>`;
+    cards=arr.length?`<h3 class="gh">${arr.length.toLocaleString('en-GB')} result${arr.length===1?'':'s'}<span>best matches first</span></h3><ul class="list">${arr.slice(0,shown).map(s=>card(s,true)).join('')}</ul>`+(arr.length>shown?`<button class="more" data-more="q">Show ${Math.min(PAGE,arr.length-shown)} more of ${(arr.length-shown).toLocaleString('en-GB')}</button>`:''):`<div class="empty"><b>Nothing matches</b><span>Try fewer words, a wider year range, or turn off some filters.${VIEW==='v1'?' Works outside the effect-on-people set are searched by title only.':''}</span><button data-act="reset">Reset filters and search</button></div>`;
   }else if(sub){
     const arr=visible(BYSUB[cap.id+'/'+sub.id]||[]);
     if(!arr.length)cards=`<div class="empty"><b>No studies match these filters</b><span>Widen the years or turn a filter back on.</span><button data-act="reset">Reset filters</button></div>`;
@@ -558,48 +582,47 @@ function render(){
   const scope=scopeOf();
   const arr=visible(scope);
   const color=cap?`var(--c-${cap.id})`:S.theme!==null?`var(--t-${S.theme})`:'var(--ink)';
-  const rootName=VIEW==='v2'?'All areas':'All topics';
-  let crumbs;
-  if(!cap)crumbs=`<span class="here">${rootName}</span>`;
-  else if(!sub)crumbs=`<button data-go="root">${rootName}</button><span class="sep">›</span><span class="here">${esc(cap.name)}</span>`;
-  else crumbs=`<button data-go="root">${rootName}</button><span class="sep">›</span><button data-go="cap:${cap.id}">${esc(cap.name)}</button><span class="sep">›</span><span class="here">${esc(sub.name)}</span>`;
+  const rootName='All themes';
+  const th=cap&&!cap.ne?THEMES[cap.theme]:null,multi=!!th&&CAPS.filter(x=>x.theme===cap.theme).length>1;
+  const parts=[{go:'root',label:rootName}];
+  if(S.theme!==null&&!cap)parts.push({label:THEMES[S.theme].name});
+  if(cap){if(multi)parts.push({go:'theme:'+cap.theme,label:th.name});parts.push({go:'cap:'+cap.id,label:cap.name});if(sub)parts.push({label:sub.name})}
+  parts[parts.length-1].go=null;
+  const crumbs=parts.map((x,i)=>(i?'<span class="sep">›</span>':'')+(x.go?`<button data-go="${x.go}">${esc(x.label)}</button>`:`<span class="here">${esc(x.label)}</span>`)).join('');
+  const bk=parts.length>1?parts[parts.length-2]:null,bb=$('#back');
+  bb.hidden=!bk;if(bk){bb.dataset.go=bk.go;bb.textContent='‹ Back to '+bk.label}
   $('#crumbs').innerHTML=crumbs;
-  const title=sub?sub.name:cap?cap.name:S.theme!==null?THEMES[S.theme].name:(VIEW==='v2'?`${CAPS.filter(c=>!c.ne).length} areas in ${THEMES.length} themes`:`${CAPS.filter(c=>!c.ne).length} topic groups in ${THEMES.length} themes`);
+  const title=sub?sub.name:cap?cap.name:S.theme!==null?THEMES[S.theme].name:`${THEMES.length} themes`;
   let line;
   if(!cap&&S.theme!==null)line=(THEMES[S.theme].description||'')+' Tap a group below to open it.';
-  else if(!cap)line=VIEW==='v2'?'Groups of studies by what they say about people, gathered into themes. Tap a theme to focus it or a group to open it.':'Groups of studies by topic and technology, gathered into themes. Tap a theme to focus it or a group to open it.';
+  else if(!cap)line=VIEW==='v2'?'Themes that emerged from what the studies say about people. Tap one to open it.':'Themes that emerged from topic and technology. Tap one to open it.';
   else if(!sub)line=(cap.desc?cap.desc+' ':'')+`${cap.subs.length} sub-area${cap.subs.length===1?'':'s'}. Tap one to read the studies.`;
   else line='Grouped by effect, newest first.';
-  $('#head').innerHTML=`<h2 class="title" style="--c:${color}">${cap?'<i></i>':''}${esc(title)}</h2><p class="sub">${esc(line)}</p>${S.qt.length?`<p class="sub">Searching for “${esc(S.q)}”: ${arr.length.toLocaleString('en-GB')} match${arr.length===1?'':'es'}.</p>`:''}${arr.length?`<button class="dl" data-act="csv">Download these ${arr.length.toLocaleString('en-GB')} ${VIEW==='v1'?'works':'studies'} as CSV</button>`:''}`;
+  $('#head').innerHTML=`<h2 class="title" style="--c:${color}">${cap?'<i></i>':''}${esc(title)}</h2><p class="sub">${esc(line)}</p>${S.qt.length?`<p class="sub">Searching for “${esc(S.q)}”: ${arr.length.toLocaleString('en-GB')} match${arr.length===1?'':'es'}.</p>`:''}${F.from!==Y0||F.to!==Y1?`<p class="sub">Published ${F.from===F.to?F.from:F.from+'–'+F.to}: ${arr.length.toLocaleString('en-GB')} ${arr.length===1?'match':'matches'}. <button class="dl" data-act="allyears">Show all years</button></p>`:''}${arr.length?`<button class="dl" data-act="csv">Download these ${arr.length.toLocaleString('en-GB')} ${VIEW==='v1'?'works':'studies'} as CSV</button>`:''}`;
   $('#stats').innerHTML=statsBlock(arr,scope.length,color,scope);
   const key=VIEW+'|'+S.cap+'/'+S.sub;
   G=buildGraph(cap,sub);G.t0=(key===viewKey&&window.__t0)?window.__t0:performance.now();
   if(key!==viewKey){window.__t0=G.t0;viewKey=key}
   const kt=G.k>1?` Each dot is a bundle of up to ${G.k} studies with the same effect.`:' Each dot is one study.';
-  $('#gcap').textContent=(!cap?(VIEW==='v2'?'Lines join areas whose studies also bear on each other; thicker means more studies. Non-English studies sit apart.':'Areas are automatic topic and technology groups. Non-English studies sit apart.')
-    :!sub?(VIEW==='v2'?'Outer dots are the other areas. Lines show studies that also bear on them.':'Outer dots are the other groups.')
+  $('#gcap').textContent=(!cap?(VIEW==='v2'?'Lines join groups whose studies also bear on each other; thicker means more studies.':'Themes and groups are made automatically from topic and technology.')
+    :!sub?(VIEW==='v2'?'Outer dots are the other groups. Lines show studies that also bear on them.':'Outer dots are the other groups.')
     :'Dots are grouped by effect. Tap a dot to jump to its card.')+kt;
   const dl=$('#dlg');dl.hidden=!(S.colour==='dir'||sub);
   dl.innerHTML=DIRS.map(d=>`<span><i class="${d.id==='unk'?'unk':''}" style="background:var(--d-${d.id})"></i>${d.label}</span>`).join('');
   let lg;
-  if(!cap)lg=CAPS.map(c=>({go:'cap:'+c.id,col:c.id,name:c.name,n:visible(BYCAP[c.id]||[]).length,base:(BYCAP[c.id]||[]).length,on:false}));
+  if(!cap&&S.theme===null)lg=rootNodes().map(n=>({go:n.go,col:n.key,name:n.name,n:n.capIds.reduce((a,id)=>a+visible(BYCAP[id]||[]).length,0),base:n.capIds.reduce((a,id)=>a+(BYCAP[id]||[]).length,0),on:false}));
+  else if(!cap)lg=CAPS.filter(c=>c.theme===S.theme).map(c=>({go:'cap:'+c.id,col:c.id,name:c.name,n:visible(BYCAP[c.id]||[]).length,base:(BYCAP[c.id]||[]).length,on:false}));
   else lg=cap.subs.map(s=>({go:`sub:${cap.id}:${s.id}`,col:cap.id,name:s.name,n:visible(BYSUB[cap.id+'/'+s.id]||[]).length,base:(BYSUB[cap.id+'/'+s.id]||[]).length,on:!!sub&&sub.id===s.id}));
   const lgBtn=i=>`<button class="lg${i.on?' on':''}${i.base===0?' zero':''}" style="--c:var(--c-${i.col})" data-go="${i.go}"><i></i>${esc(i.name)} <b>${i.n.toLocaleString('en-GB')}</b></button>`;
-  const LG=$('#legend');LG.className='legend'+(cap?' flat':'');
-  if(cap)LG.innerHTML=lg.map(lgBtn).join('');
-  else{
-    const tg=THEMES.map((t,ti)=>{const hs=lg.filter(x=>CAPS[+x.col.slice(1)].theme===ti);return hs.length?`<div class="tg"><button class="th${S.theme===ti?' on':''}" style="--c:var(--t-${ti})" data-theme="${ti}" title="Focus this theme"><i></i>${esc(t.name)}</button><div class="tchips">${hs.map(lgBtn).join('')}</div></div>`:''}).join('');
-    const ne=lg.filter(x=>CAPS[+x.col.slice(1)].ne);
-    LG.innerHTML=tg+(ne.length?`<div class="tg"><span class="th"><i style="background:var(--muted)"></i>Kept apart</span><div class="tchips">${ne.map(lgBtn).join('')}</div></div>`:'');
-  }
+  const LG=$('#legend');LG.className='legend flat';LG.innerHTML=lg.map(lgBtn).join('');
   renderCards();syncFilterUI();rvBar();syncHash();dirty=true;
 }
 
 /* ---------- filters ---------- */
 function buildFilters(){
   let h=`<fieldset class="fs"><legend>Year published <output id="yr"></output></legend>
-    <div class="years"><label>From<input type="range" id="yfrom" min="${Y0}" max="${Y1}" step="1"></label>
-    <label>To<input type="range" id="yto" min="${Y0}" max="${Y1}" step="1"></label></div></fieldset>`;
+    <div class="dual"><div class="dtrack"><div class="dfill" id="dfill"></div></div><input type="range" id="yfrom" min="${Y0}" max="${Y1}" step="1" aria-label="Earliest year"><input type="range" id="yto" min="${Y0}" max="${Y1}" step="1" aria-label="Latest year"></div>
+    <div class="dlabels"><span>${Y0}</span><span>${Y1}</span></div></fieldset>`;
   GROUPS.forEach((g,i)=>{
     if(g[0]==='inv'&&OPTS.inv.length<2)return;
     if(g[0]==='rq'&&!REVIEW)return;
@@ -613,22 +636,22 @@ function syncFilterUI(){
   document.querySelectorAll('#filters input[data-g]').forEach(i=>{i.checked=F[i.dataset.g].has(i.value)});
   GROUPS.forEach(g=>{const e=$('#cnt-'+g[0]);if(e&&F[g[0]])e.textContent=F[g[0]].size+'/'+OPTS[g[0]].length});
   const yf=$('#yfrom'),yt=$('#yto');
-  if(yf){yf.value=F.from;yt.value=F.to;$('#yr').textContent=F.from===F.to?F.from:F.from+'–'+F.to}
+  if(yf){yf.value=F.from;yt.value=F.to;$('#yr').textContent=F.from===F.to?F.from:F.from+'–'+F.to;const sp=Math.max(1,Y1-Y0);$('#dfill').style.left=((F.from-Y0)/sp*100)+'%';$('#dfill').style.right=(100-(F.to-Y0)/sp*100)+'%'}
   const n=activeCount(),fc=$('#fcount');fc.textContent=n;fc.hidden=n===0;
   $('#showing').textContent=STUDIES.filter(s=>passes(s)).length.toLocaleString('en-GB')+' of '+STUDIES.length.toLocaleString('en-GB')+(VIEW==='v1'?' works':' studies');
 }
 function navigate(go){
   const p=go.split(':');S.theme=null;
-  if(p[0]==='root'){S.cap=null;S.sub=null}else if(p[0]==='cap'){S.cap=p[1];S.sub=null}else{S.cap=p[1];S.sub=p[2]}
+  if(p[0]==='root'){S.cap=null;S.sub=null}else if(p[0]==='theme'){S.theme=+p[1];S.cap=null;S.sub=null}else if(p[0]==='cap'){S.cap=p[1];S.sub=null}else{S.cap=p[1];S.sub=p[2]}
   S.page={};render();
   $('#crumbs').scrollIntoView({block:'nearest',behavior:matchMedia('(prefers-reduced-motion:reduce)').matches?'auto':'smooth'});
 }
 document.addEventListener('click',e=>{
-  const th=e.target.closest('[data-theme]');if(th){const t=+th.dataset.theme;S.theme=S.theme===t?null:t;S.cap=null;S.sub=null;render();return}
   const g=e.target.closest('[data-go]');if(g){navigate(g.dataset.go);return}
+  const yb=e.target.closest('[data-yr]');if(yb){const[a,z]=yb.dataset.yr.split('-').map(Number);if(F.from===a&&F.to===z){F.from=Y0;F.to=Y1}else{F.from=a;F.to=z}S.page={};render();return}
   const m=e.target.closest('[data-more]');if(m){S.page[m.dataset.more]=(S.page[m.dataset.more]||PAGE)+PAGE;renderCards();return}
   const a=e.target.closest('[data-act]');
-  if(a){if(a.dataset.act==='csv'){csv();return}if(a.dataset.act==='reset')resetF();if(a.dataset.act==='reviews')SEPARATE.forEach(v=>F.design.add(v));S.page={};render()}
+  if(a){if(a.dataset.act==='csv'){csv();return}if(a.dataset.act==='allyears'){F.from=Y0;F.to=Y1}if(a.dataset.act==='noreviews')SEPARATE.forEach(v=>F.design.delete(v));if(a.dataset.act==='reset')resetF();if(a.dataset.act==='reviews')SEPARATE.forEach(v=>F.design.add(v));S.page={};render()}
 });
 $('#fbtn').addEventListener('click',()=>{const p=$('#filters'),open=p.hidden;p.hidden=!open;$('#fbtn').setAttribute('aria-expanded',String(open))});
 $('#filters').addEventListener('change',e=>{const t=e.target;if(t.dataset.g){t.checked?F[t.dataset.g].add(t.value):F[t.dataset.g].delete(t.value)}S.page={};render()});
