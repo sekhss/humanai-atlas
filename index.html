@@ -238,6 +238,7 @@ let DIRS=DIRS_ALL.slice(0,6);
 const INVL={effect_on_people:'Effect of AI on people',people_use_ai:'How people use AI',ai_for_people:'AI built for people',ai_only:'AI systems themselves',other:'Other'};
 const DES={rct:'Randomised trial',exp:'Experiment',long:'Longitudinal',cross:'Survey / cross-sectional',qual:'Qualitative',review:'Review / meta-analysis',theory:'Theory / commentary',technical:'Technical / system',unk:'Design unclear'};
 const SEPARATE=['review','theory','technical'];
+const VTK=['A+','A','B','C','Else'],VTL={'A+':'A+ venues',A:'A venues',B:'B venues',C:'C venues',Else:'Everything else'};
 const AIN={llm:'Language models',gen:'Generative',rec:'Recommenders',dec:'Decision aids',comp:'Chatbots / companions',tutor:'Tutoring',auto:'Automation',robot:'Robots',other:'Other AI',none:'No AI'};
 const ST={peer:'Peer-reviewed',preprint:'Preprint',grey:'Grey literature'};
 const CONF=[['high','High (70+)',s=>s.cf>=70],['med','Medium (50–69)',s=>s.cf>=50&&s.cf<70],['low','Low (under 50)',s=>s.cf<50]];
@@ -248,7 +249,7 @@ let REST=null,RESTLOADING=null,BYID={};
 
 /* ---------- data ---------- */
 const ALL=A.studies.map(a=>({num:a[0],id:'AHA-'+String(a[0]).padStart(5,'0'),t:a[1],y:a[2],d:a[3],v:DC.venue[a[4]],a:a[5],dir:DC.dir[a[6]],de:DC.design[a[7]],ai:DC.ai[a[8]],cf:a[9],
-  hf:a[10],fi:a[11],lang:DC.lang[a[12]],st:DC.status[a[13]],pop:DC.pop[a[14]],set:DC.set[a[15]],al:a[16],c2:a[17],s2:a[18],a2:a[19],c1:a[20],s1:a[21],flag:a[22],inv:'effect_on_people',
+  hf:a[10],fi:a[11],lang:DC.lang[a[12]],st:DC.status[a[13]],vt:VTK[DC.venue_tier[a[4]]],pop:DC.pop[a[14]],set:DC.set[a[15]],al:a[16],c2:a[17],s2:a[18],a2:a[19],c1:a[20],s1:a[21],flag:a[22],inv:'effect_on_people',
   q:(a[1]+' '+a[10]+' '+a[11]).toLowerCase()}));
 const YS=ALL.map(s=>s.y).filter(y=>y>=1900&&y<=2100),Y0=Math.min(...YS),Y1=Math.max(...YS);
 
@@ -267,9 +268,10 @@ function buildOpts(P){
   OPTS.status=Object.keys(ST).filter(k=>t[k]).map(k=>[k,ST[k],t[k]]);
   OPTS.lang=[['en','English',l.en||0],['other','Non-English',l.other||0]].filter(o=>o[2]);
   OPTS.rq=[['flag','Needs checking',P.filter(s=>s.flag).length],['ok','Looks fine',P.filter(s=>!s.flag).length]];
+  const vc=cnt(s=>s.vt);OPTS.vt=VTK.map(k=>[k,VTL[k],vc[k]||0]);
   OPTS.conf=CONF.map(c=>[c[0],c[1],P.filter(c[2]).length]);
 }
-const GROUPS=[['rq','Review queue'],['inv','Topic of the work'],['dir','Direction of effect'],['design','Study type'],['conf','Coding confidence'],['ai','AI type'],['status','Publication status'],['lang','Language']];
+const GROUPS=[['rq','Review queue'],['inv','Topic of the work'],['dir','Direction of effect'],['vt','Venue quality'],['design','Study type'],['conf','Coding confidence'],['ai','AI type'],['status','Publication status'],['lang','Language']];
 function resetF(){Object.keys(OPTS).forEach(k=>{F[k]=new Set(OPTS[k].map(o=>o[0]))});SEPARATE.forEach(v=>F.design.delete(v));F.from=Y0;F.to=Y1;S.q='';S.qt=[];const q=$('#gq');if(q)q.value=''}
 function defOf(k){return OPTS[k].map(o=>o[0]).filter(v=>!(k==='design'&&SEPARATE.includes(v)))}
 function isDef(k){const d=defOf(k);return F[k].size===d.length&&d.every(v=>F[k].has(v))}
@@ -277,7 +279,7 @@ function activeCount(){let n=0;Object.keys(OPTS).forEach(k=>{if(!isDef(k))n++});
 const confOf=s=>s.cf>=70?'high':s.cf>=50?'med':'low';
 function passes(s,ignore){
   if(ignore!=='year'&&s.y&&(s.y<F.from||s.y>F.to))return false;
-  if(!F.rq.has(s.flag?'flag':'ok')||!F.inv.has(s.inv)||!F.dir.has(s.dir)||!F.ai.has(s.ai)||!F.status.has(s.st)||!F.lang.has(s.lang==='en'?'en':'other')||!F.conf.has(confOf(s)))return false;
+  if(!F.rq.has(s.flag?'flag':'ok')||!F.vt.has(s.vt)||!F.inv.has(s.inv)||!F.dir.has(s.dir)||!F.ai.has(s.ai)||!F.status.has(s.st)||!F.lang.has(s.lang==='en'?'en':'other')||!F.conf.has(confOf(s)))return false;
   if(ignore!=='design'&&s.inv==='effect_on_people'&&!F.design.has(s.de))return false;
   if(S.qt.length&&!S.qt.every(t=>s.q.indexOf(t)>=0))return false;
   return true;
@@ -287,7 +289,7 @@ function ensureRest(){
   if(RESTLOADING)return RESTLOADING;
   RESTLOADING=new Promise((res,rej)=>{const sc=document.createElement('script');sc.src='atlas_v1_rest.js';
     sc.onload=()=>{const R=window.ATLAS_REST;REST=R.studies.map(a=>({num:a[0],id:'AHA-'+String(a[0]).padStart(5,'0'),t:a[1],y:a[2],d:a[3],v:'',a:'',inv:A.inv[a[4]],dir:DC.dir[a[5]],de:DC.design[a[6]],ai:DC.ai[a[7]],cf:a[8],
-      hf:'',fi:'',lang:DC.lang[a[11]],st:DC.status[a[12]],pop:'',set:'',al:'',c2:-1,s2:-1,a2:-1,c1:a[9],s1:a[10],flag:0,q:a[1].toLowerCase()}));res()};
+      hf:'',fi:'',lang:DC.lang[a[11]],st:DC.status[a[12]],vt:VTK[a[13]],pop:'',set:'',al:'',c2:-1,s2:-1,a2:-1,c1:a[9],s1:a[10],flag:0,q:a[1].toLowerCase()}));res()};
     sc.onerror=()=>{RESTLOADING=null;rej(new Error('load failed'))};document.head.appendChild(sc)});
   return RESTLOADING;
 }
@@ -307,7 +309,7 @@ function setView(v){
   STUDIES.forEach(s=>{BYID[s.id]=s;(BYCAP[s.cap]=BYCAP[s.cap]||[]).push(s);const k=s.cap+'/'+s.sub;(BYSUB[k]=BYSUB[k]||[]).push(s)});
   S.cap=null;S.sub=null;S.theme=null;S.page={};viewKey='';
   $('#v2b').setAttribute('aria-pressed',v==='v2');$('#v1b').setAttribute('aria-pressed',v==='v1');
-  $('#badge').textContent='Prototype · '+STUDIES.length.toLocaleString('en-GB')+(v==='v1'?' works':' studies')+' · AI-coded';
+  $('#badge').textContent=STUDIES.length.toLocaleString('en-GB')+(v==='v1'?' works':' studies');
   $('#foot').textContent=(v==='v1'?`All ${STUDIES.length.toLocaleString('en-GB')} indexed works, grouped by topic and technology. Direction of effect is coded only for the ${ALL.length.toLocaleString('en-GB')} studies of what AI does to people; every other work shows no direction. `:A.note+' ')+'Direction, study type, findings and groups were produced by Claude from titles and abstracts and have not been checked by a person; where the text does not say, the study is marked "not stated" and works with low confidence are flagged "needs checking". Group names are automatic first drafts. Reviews, commentary and technical papers about the effect on people are counted separately by default.';
   readColors();render();
 }
@@ -562,6 +564,7 @@ function statsBlock(arr,scopeLen,color,scope){
 }
 function card(s,withPath){
   const tags=[ST[s.st]||s.st,AIN[s.ai]||s.ai];
+  if(s.vt&&s.vt!=='Else')tags.splice(1,0,s.vt+' venue');
   if(s.inv!=='effect_on_people')tags.unshift(INVL[s.inv]||s.inv);
   if(s.hf&&s.hf!=='none')tags.push(s.hf);
   if(s.pop&&s.pop!=='none')tags.push(s.pop);
@@ -575,7 +578,7 @@ function card(s,withPath){
     <div class="tags">${tags.map(t=>`<span class="tag">${esc(t)}</span>`).join('')}${s.flag?'<span class="tag chk">needs checking</span>':''}</div>
     ${s.al?`<div class="meta">Also touches ${esc(s.al)}</div>`:''}
     ${withPath?(()=>{const c=CAPS[+s.cap.slice(1)];return `<button class="path" data-go="sub:${s.cap}:${s.sub}">${esc(c.name)} › ${esc((c.subs[+s.sub.slice(1)]||{}).name||'')} · show in map</button>`})():''}
-    <span class="ai">AI-coded · not yet verified · confidence ${s.cf}%</span>
+    <span class="ai">Confidence ${s.cf}%</span>
     ${REVIEW?rvHTML(s):''}
     <div class="meta">${s.id}</div></li>`;
 }
@@ -676,8 +679,8 @@ function buildFilters(){
   GROUPS.forEach((g,i)=>{
     if(g[0]==='inv'&&OPTS.inv.length<2)return;
     if(g[0]==='rq'&&!REVIEW)return;
-    h+=`<details class="grp"${i<3?' open':''}><summary>${g[1]}<span class="cnt" id="cnt-${g[0]}"></span></summary>
-      <div class="chips-row">${OPTS[g[0]].map(o=>`<label class="chip"><input type="checkbox" data-g="${g[0]}" value="${o[0]}"><span>${o[1]} · ${o[2].toLocaleString('en-GB')}</span></label>`).join('')}</div></details>`;
+    h+=`<details class="grp"${i<4?' open':''}><summary>${g[1]}<span class="cnt" id="cnt-${g[0]}"></span></summary>
+      <div class="chips-row">${OPTS[g[0]].map(o=>`<label class="chip"><input type="checkbox" data-g="${g[0]}" value="${o[0]}"><span>${o[1]} · ${o[2].toLocaleString('en-GB')}</span></label>`).join('')}</div>${g[0]==='vt'?'<p class="hint" style="margin-top:8px">Graded from the CCF, CORE and SCImago rankings (see Method). Everything else includes preprints, books and venues that are not in those lists.</p>':''}</details>`;
   });
   h+=`<p class="hint">Age group, region, funding and sample size are not coded yet, so they are not offered as filters.</p><button class="reset" data-act="reset">Reset all filters</button>`;
   $('#filters').innerHTML=h;
@@ -712,9 +715,9 @@ let qt;$('#filters').addEventListener('input',e=>{const t=e.target;
 /* ---------- CSV, links, review mode, search box ---------- */
 function csv(){
   const arr=visible(scopeOf());
-  const H=['id','title','year','doi','direction','study_type','topic_of_work','group','sub_area','human_focus','finding','confidence_pct','ai_coded_unverified'];
+  const H=['id','title','year','doi','direction','study_type','topic_of_work','group','sub_area','human_focus','finding','confidence_pct','venue_tier','ai_coded_unverified'];
   const q=v=>'"'+String(v==null?'':v).replace(/"/g,'""')+'"';
-  const lines=arr.map(s=>{const c=CAPS[+s.cap.slice(1)];return [s.id,s.t,s.y||'',s.d?'https://doi.org/'+s.d:'',(DIRS_ALL.find(d=>d.id===s.dir)||{}).label,DES[s.de]||s.de,INVL[s.inv]||s.inv,c.name,(c.subs[+s.sub.slice(1)]||{}).name,s.hf,s.fi,s.cf,'yes'].map(q).join(',')});
+  const lines=arr.map(s=>{const c=CAPS[+s.cap.slice(1)];return [s.id,s.t,s.y||'',s.d?'https://doi.org/'+s.d:'',(DIRS_ALL.find(d=>d.id===s.dir)||{}).label,DES[s.de]||s.de,INVL[s.inv]||s.inv,c.name,(c.subs[+s.sub.slice(1)]||{}).name,s.hf,s.fi,s.cf,VTL[s.vt],'yes'].map(q).join(',')});
   download('aha-studies.csv','\ufeff'+H.join(',')+'\n'+lines.join('\n'));
 }
 function download(name,text){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type:'text/csv;charset=utf-8'}));a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),2000)}

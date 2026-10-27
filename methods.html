@@ -53,11 +53,22 @@ code{font:500 13px var(--mono);background:var(--soft);padding:1px 5px;border-rad
 <li><b>Machine-learning era:</b> algorithmic recommendation, recommender system, machine learning, smart assistant, social robot, affective computing.</li>
 <li><b>Generative-AI era:</b> generative AI, large language model, ChatGPT, chatbot, AI companion, copilot.</li>
 </ul>
-<p>Each AI term was combined with each of thirteen human-side terms: attention, memory, critical thinking, learning, creativity, skill, expertise, trust, empathy, loneliness, wellbeing, autonomy and deskilling. Each combination returned up to 400 results. Duplicates were removed, matching on DOI first.</p>
+<p>The <b>human-side terms</b> were: attention, memory, critical thinking, learning, creativity, skill, expertise, trust, empathy, loneliness, wellbeing, autonomy and deskilling.</p>
+<p>Each search was <b>one AI term AND one human-side term</b>, both as exact phrases, for example <code>"chatbot" AND "loneliness"</code>. The 19 AI terms and 13 human-side terms give 247 searches in all, and a work is in the atlas only if one of them returned it. Each search kept up to 400 results (see section 2). Duplicates were removed, matching on DOI first.</p>
 <p>That gives <b>57,741 works</b>: 47,209 peer-reviewed and 10,532 preprints. An era is set by the <b>publication year</b>, not by the technology a paper discusses.</p>
-<p>This is a broad net, not a complete census. Studies that use different words, work in other fields, or are not in OpenAlex will be missing, and the search terms are in English. I have not yet estimated how much of the field the index misses.</p>
+<p>This is a broad net, not a complete census. Studies that use different words, work in other fields, or are not in OpenAlex will be missing, and the search terms are in English. The next section says what that does to the map.</p>
 
-<h2>2. How each work was coded</h2>
+<h2>2. What the search may have missed, and how it may bias the groups</h2>
+<p>The groups on the atlas are shaped by the words I searched for. Three things matter.</p>
+<h3>Only studies that match the search words are in</h3>
+<p>A work is here only if OpenAlex matched it to one AI term and one of the thirteen human-side words. Outcomes that are not on that list, such as productivity, performance, privacy, fairness, misinformation or job loss, are found only when a study's text also happens to contain one of the thirteen words. The AI terms had a gap too: the plain phrases "artificial intelligence", "AI tools" and "LLM" were not among them, so a study that uses only those words is missing unless it also names one of the specific terms. In an informal spot check against 17 well-known papers on AI and people that I picked by hand, 12 were in the index. Of the 5 that were missing, 3 are about productivity, which is not one of the words.</p>
+<h3>Some groups exist largely because I searched for them</h3>
+<p>For the groups Critical thinking, Loneliness and isolation, Autonomy and control, and Creativity, 92%, 95%, 84% and 79% of their studies were found by the search using that very word. A group's size therefore shows how hard I searched for its topic, not how much research exists on it, and it should not be compared with groups whose topic was not a search word. Overall, 75% of all works were found through only one of the thirteen human-side words, so each word acts as a gate to its own part of the map.</p>
+<h3>Only the top 400 results of each search were kept</h3>
+<p>OpenAlex ranks results by relevance, and I kept the first 400 of each search. For 226 of the 247 searches OpenAlex reported more matches than that: a typical search matched about 5,464 works (symbolic era), 5,656 (machine-learning era) or 27,580 (generative-AI era). These counts include matches outside titles and abstracts. Counting titles and abstracts only, 93 searches still had more than 400 matches. Broad pairings are cut hardest: <code>"ChatGPT" AND "learning"</code>, for example, matches about 21,408 works by title and abstract, and the search kept 400.</p>
+<p><b>What this means.</b> Read group sizes as a picture of what this search found, not as the share of research on each topic. The groups, and the studies in them, are real, but there are certainly relevant studies that are not in the atlas. I plan to widen the search (more human-side words, searches split by year to get past the 400 limit, studies cited by recent reviews, and the main human-computer interaction conferences) and to measure how many known relevant papers it finds.</p>
+
+<h2>3. How each work was coded</h2>
 <p>Each of the 57,741 works was read by <b>Claude Haiku 5.5</b>, an AI model, which filled in a fixed set of fields from the title and abstract. For 51,043 works the abstract was available; for 6,698 only the title was, and those codings carry lower confidence. The model was told to write "not stated" rather than guess.</p>
 <p>The fields include: what the work is about (<i>topic of the work</i>), the human capacity or outcome it concerns (<i>human focus</i>, for example "critical thinking" or "loneliness"), who was studied, the setting, the kind of AI, the study design, one sentence on what was found, and a confidence score.</p>
 
@@ -88,14 +99,14 @@ code{font:500 13px var(--mono);background:var(--soft);padding:1px 5px;border-rad
 <p>To design the scheme, 1,000 works were coded by hand in a working session, with direction and study design recorded for 380 of them. That sample guided the definitions. It is <b>not</b> a check of the model's coding of the full set. A reviewed sample, so that an accuracy figure can be quoted, is planned.</p>
 <p>Studies are flagged <b>"needs checking"</b> when the model's confidence is below 0.6, only the title was available, or the direction is not stated: 3,051 of the 11,007 effect studies.</p>
 
-<h2>3. What the atlas shows by default</h2>
+<h2>4. What the atlas shows by default</h2>
 <ul>
 <li>The <b>Human focus</b> view shows the 11,007 studies of AI's effect on people. Of these, 4,107 are reviews, commentary or technical papers; they are <b>counted separately and left out by default</b>, so the default is 6,900 studies. You can include them with one click.</li>
 <li>The <b>Topic &amp; technology</b> view shows all 57,741 works, including the many that are about building or using AI rather than its effects.</li>
 <li>731 of the effect studies are not in English. They form their own group, sorted by topic, kept apart from the central map and not linked to the others.</li>
 </ul>
 
-<h2>4. How the groups are made</h2>
+<h2>5. How the groups are made</h2>
 <h3>Human focus view</h3>
 <p>The short phrase describing each study's human focus was turned into a numerical embedding (using the all-MiniLM-L6-v2 model), and the phrases were clustered with hierarchical (Ward) clustering. Cutting the resulting tree at fixed similarity levels gives <b>sub-areas</b> (110 of them) and <b>groups</b> (20). A group that grew too large was split by sub-area, with each part joining the nearest group when it was close enough. Groups are then gathered into <b>7 themes</b> by cutting a tree of the groups.</p>
 <p>Because the number of groups comes from cut heights rather than a target, groups differ widely in size. There is no natural break in the data; another cut would give a different, equally defensible map.</p>
@@ -103,7 +114,7 @@ code{font:500 13px var(--mono);background:var(--soft);padding:1px 5px;border-rad
 <h3>Topic &amp; technology view</h3>
 <p>Each work's title and abstract were embedded and clustered (UMAP and HDBSCAN, repeated within clusters), then the resulting top-level topic clusters were gathered into 18 groups and <b>10 themes</b> by cutting a tree of their centres, the same way. These clusters group works by subject and technology, not by what they say about people.</p>
 
-<h2>5. How to read the map</h2>
+<h2>6. How to read the map</h2>
 <ul>
 <li>Each <b>dot is a bundle</b> of studies with the same direction of effect. The caption says how many studies a dot stands for; at the lowest level each dot is one study.</li>
 <li>A <b>line</b> joins two groups when studies in one also bear on the other, as coded by the model. A thicker line means more such studies.</li>
@@ -111,20 +122,50 @@ code{font:500 13px var(--mono);background:var(--soft);padding:1px 5px;border-rad
 <li>Counts update with the filters, the search and the year range.</li>
 </ul>
 
-<h2>6. Known limits</h2>
+<h2>7. Venue quality tiers</h2>
+<p>The Venue quality filter grades the journal or conference a work appeared in as <b>A+, A, B, C or everything else</b>. The grade describes the venue, not the study: a good study can appear in a modest venue and the reverse. It uses three published rankings:</p>
+<ul>
+<li><b>CCF</b>: China Computer Federation, <i>Recommended International Academic Conferences and Journals</i>, the human-computer interaction and pervasive computing, artificial intelligence, and cross-disciplinary/comprehensive/emerging lists (classes A, B, C). <a href="https://www.ccf.org.cn/Academic_Evaluation/HCIAndPC/">ccf.org.cn/Academic_Evaluation</a>, retrieved 27 October 2026.</li>
+<li><b>CORE</b>: Computing Research and Education (Australasia) conference ranks, ICORE2026 edition with CORE2023 for names the newer edition lacks (A*, A, B, C). <a href="https://portal.core.edu.au/conf-ranks/">portal.core.edu.au/conf-ranks</a>, retrieved 27 October 2026.</li>
+<li><b>SCImago</b>: SCImago Journal &amp; Country Rank (SJR, based on Scopus). <a href="https://www.scimagojr.com">scimagojr.com</a>, using the yearly files compiled by Michael E. Rose (<a href="https://github.com/Michael-E-Rose/SCImagoJournalRankIndicators">github.com/Michael-E-Rose/SCImagoJournalRankIndicators</a>), data year 2025.</li>
+</ul>
+<p>Each venue gets the best grade any source supports:</p>
+<table>
+<tr><th>Grade</th><th>What earns it</th></tr>
+<tr><td>A+</td><td>CORE A* (conferences), or a journal in the top 5% by SJR within its subject area</td></tr>
+<tr><td>A</td><td>CORE A or CCF A, or a journal in the top quarter by SJR</td></tr>
+<tr><td>B</td><td>CORE B or CCF B, or a journal in the second quarter by SJR</td></tr>
+<tr><td>C</td><td>CORE C or CCF C, or any other journal listed by SCImago</td></tr>
+<tr><td>Everything else</td><td>not found in any of the three</td></tr>
+</table>
+<p>The SJR percentile is computed here, from SJR within each of SCImago's broad subject areas (best across the areas a journal belongs to). It approximates but does not reproduce SCImago's own quartiles, which use narrower categories. Two conference names were matched by hand because CORE lists them under older names: the AAAI Conference on Artificial Intelligence and NeurIPS (both A* in CORE). Names were matched to the lists automatically and then audited by hand for false matches.</p>
+<table>
+<tr><th>Grade</th><th>Studies in the Human focus view</th><th>All works</th></tr>
+<tr><td>A+</td><td class="n">1,315</td><td class="n">5,923</td></tr><tr><td>A</td><td class="n">1,429</td><td class="n">9,526</td></tr><tr><td>B</td><td class="n">902</td><td class="n">5,069</td></tr><tr><td>C</td><td class="n">399</td><td class="n">2,538</td></tr><tr><td>Everything else</td><td class="n">6,962</td><td class="n">34,685</td></tr>
+</table>
+<p><b>Read the grades with care.</b> About 60% of works fall under "everything else", because this includes preprint servers (arXiv, SSRN, Zenodo), books and book chapters, theses, works with no listed venue, and journals or conferences the three lists do not cover, including many newer ones. CCF and CORE rank computing venues only, so non-computing conferences are unlisted. Short-paper venues such as extended abstracts, companions and late-breaking work are not graded, even when the main conference is. Conference and journal grades come from different scales and are not strictly comparable. A work's grade is for the venue it appears in now, so a preprint later published in a top venue may show as a preprint.</p>
+
+<h2>8. Known limits</h2>
 <ul>
 <li><b>Nothing is verified.</b> Expect errors in direction, study type and grouping. The model reads abstracts only, not full texts.</li>
 <li><b>"Transforms" is probably under-counted.</b> The model used it for only 40 studies, while hand coding used it more often.</li>
 <li><b>Abstract-only and title-only coding.</b> Where an abstract is missing (6,698 works) the coding rests on the title. Only a small share of missing abstracts could be filled in from other sources.</li>
-<li><b>One search, in English.</b> Coverage depends on the search terms above and on OpenAlex, and favours English-language, recent work.</li>
+<li><b>One search, in English, with a cap.</b> Coverage depends on the search terms above, on the top-400 limit and on OpenAlex (see section 2), and favours English-language, recent work.</li>
 <li><b>Groups are a choice.</b> They are one reasonable way to organise the field, shaped by the cut heights and by hand edits. A study can bear on more than one area but sits in one.</li>
 <li><b>Findings are paraphrased.</b> The one-sentence finding is the model's own wording of what the abstract says, and can be wrong or incomplete.</li>
 </ul>
 
-<h2>7. Data and privacy</h2>
+<h2>9. Data and privacy</h2>
 <p>The atlas shows each study's title, authors, year, venue and DOI from OpenAlex, plus the model-written fields above. Abstracts are not republished. The download buttons export the same fields for whatever slice you are viewing, flagged as AI-coded.</p>
 
-<h2>8. Corrections and contact</h2>
+<h2>10. Sources and credits</h2>
+<ul>
+<li><b>OpenAlex</b> (<a href="https://openalex.org">openalex.org</a>) supplied the records: titles, authors, venues, years, DOIs and most abstracts. Its data is released under CC0. Please cite it as: Priem, J., Piwowar, H. &amp; Orr, R. (2022). <i>OpenAlex: A fully-open index of scholarly works, authors, venues, institutions, and concepts.</i> arXiv:2205.01833.</li>
+<li><b>Crossref</b> (<a href="https://www.crossref.org">crossref.org</a>) supplied a small number of abstracts that OpenAlex lacked.</li>
+<li><b>Claude</b> (Anthropic) read each work and drafted most group names; the all-MiniLM-L6-v2 model (Sentence-Transformers) produced the text embeddings used for grouping.</li>
+</ul>
+
+<h2>11. Corrections and contact</h2>
 <p>If you find a study that is mislabelled, miscategorised or missing, or you want to ask about the method, please write to <a href="mailto:sns46@cam.ac.uk">sns46@cam.ac.uk</a>. Corrections are especially useful because the labels have not yet been checked by people.</p>
 
 <p class="foot">Atlas of Humans × AI · prototype · built 2026-10-26 · AI-coded, not yet verified by people.</p>
